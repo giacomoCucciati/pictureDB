@@ -1,3 +1,5 @@
+# Python stuff
+*.pyc
 # Logs
 logs
 *.log
