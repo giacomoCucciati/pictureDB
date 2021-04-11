@@ -1,6 +1,11 @@
 from pymongo import MongoClient
 import copy
 import json
+from PIL import Image
+import io
+import base64
+from os.path import join
+from bson.objectid import ObjectId
 
 class MongoInterface:
 
@@ -10,21 +15,21 @@ class MongoInterface:
         if not 'tags' in self.db.collection_names():
             self.db.create_collection('tags')
         self.tagsTable = self.db['tags']
+        if not 'folders' in self.db.collection_names():
+            self.db.create_collection('folders')
+        self.foldersTable = self.db['folders']
         if not 'pictures' in self.db.collection_names():
             self.db.create_collection('pictures')
         self.picturesTable = self.db['pictures']
 
-    def savePicture(self, pictureName, selectedTags):
-      print(pictureName, selectedTags)
-      
-      picture = self.picturesTable.find_one({'picture': pictureName})
+    def savePicture(self, folderName, pictureName, selectedTags):
+      picture = self.picturesTable.find_one({'folder': folderName, 'picture': pictureName})
       if picture==None:
-        newEntry = {'picture': pictureName, 'tags':selectedTags}
+        newEntry = {'folder': folderName, 'picture': pictureName, 'tags':selectedTags}
         self.picturesTable.insert_one(newEntry)
       else:
         newtags = { "$set": { "tags": selectedTags} }
-        self.picturesTable.update_one({'picture': pictureName}, newtags)
-      print(self.picturesTable.find_one({'picture': pictureName}))
+        self.picturesTable.update_one({'folder': folderName, 'picture': pictureName}, newtags)
 
     def getTagList(self):
       tagList = []
@@ -33,16 +38,46 @@ class MongoInterface:
       return tagList
 
     def insertNewTag(self, newTagName):
-      print(newTagName)
       tag = self.tagsTable.find_one({'tagName': newTagName})
       if tag==None:
         newEntry = {'tagName': newTagName}
         self.tagsTable.insert_one(newEntry)
     
-    def getPictureTags(self, pictureName):
-      print('pictureName',pictureName)
+    def getPictureTagsByFolder(self, folderName, pictureName):
       pictureTags = []
-      picture = self.picturesTable.find_one({'picture': pictureName})
+      picture = self.picturesTable.find_one({'folder':folderName, 'picture': pictureName})
       if picture!=None:
         pictureTags = picture['tags']
       return pictureTags
+
+    def insertNewFolder(self, newFolderName):
+      tag = self.foldersTable.find_one({'folderName': newFolderName})
+      if tag==None:
+        newEntry = {'folderName': newFolderName}
+        self.foldersTable.insert_one(newEntry)
+
+    def removeFolder(self, folderName):
+      self.foldersTable.delete_many({'folderName': folderName})
+
+    def getFolderList(self):
+      folderList = []
+      for folder in self.foldersTable.find():
+        folderList.append(folder['folderName'])
+      return folderList
+    
+    def getPictureByTag(self, searchTagList):
+      buildList = []
+      for tag in searchTagList:
+        buildList.append({"tags":tag})
+      pictures = [str(id) for id in self.picturesTable.find({"$and":buildList}).distinct('_id')]
+      return pictures
+
+    def getPictureById(self, picId):
+      return self.picturesTable.find_one(ObjectId(picId))
+
+    def buildPicture(self, folder, filename):
+      img = Image.open(join(folder, filename))
+      img_io = io.BytesIO()
+      img.save(img_io, 'JPEG', quality=30)
+      img_io.seek(0)
+      return base64.b64encode(img_io.read()).decode("utf-8")
