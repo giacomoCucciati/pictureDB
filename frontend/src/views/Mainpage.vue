@@ -1,24 +1,28 @@
 <template>
-  <div>
-    <b-container class="bv-example-row">
+  <b-container>
+    <b-container>
       <b-row>
-        <b-col cols="6">
+        <b-col cols="8">
           <b-row>
             <b-col cols="1">
-              <b-button @click="getPrevPicture()" variant="outline-primary">-</b-button>
+              <div class="withMargin">
+                <b-button @click="getPrevPicture()" variant="outline-primary">-</b-button>
+              </div>
             </b-col>
             <b-col cols="10">
-              <div>
+              <div class="withMargin">
                 <b-img :src="pictureUrl" fluid alt="Responsive picture" id="mypicture"></b-img>
               </div>
             </b-col>
             <b-col cols="1">
-              <b-button @click="getNextPicture()" variant="outline-primary">+</b-button>
+              <div class="withMargin">
+                <b-button @click="getNextPicture()" variant="outline-primary">+</b-button>
+              </div>
             </b-col>
           </b-row>
           <b-row>
             <b-col>              
-              <div>
+              <div class="withMargin">
                 <b-form-group
                   label="Picture tags"
                   v-slot="{ ariaDescribedby }"
@@ -36,53 +40,10 @@
             </b-col>
           </b-row>
         </b-col>
-        <b-col cols="6">
+        <b-col cols="4">
           <b-row>
             <b-col>
-              <div>
-                <b-button @click="savePicture()" variant="outline-primary">Save Picture and Tags</b-button>
-              </div>
-            </b-col>
-          </b-row>
-          <b-row>
-            <b-col>
-              <b-button @click="addTag()" variant="outline-primary">Add Tag</b-button>
-            </b-col>
-            <b-col>
-              <b-form-input v-model="newTagName" placeholder="Enter new tag"></b-form-input>
-            </b-col>
-          </b-row>
-          <b-row>
-            <b-col>
-              Folders
-            </b-col>
-          </b-row>
-          <b-row>
-            <b-col>
-              <b-form-input v-model="selectedFolder" placeholder="Enter folder"></b-form-input>
-              <b-button @click="addFolder()" variant="outline-primary">Add Folder</b-button>
-              <b-button @click="removeFolder()" variant="outline-primary">Remove Folder</b-button>
-            </b-col>
-          </b-row>
-          <b-row>
-            <b-col>
-              <b-form-group label="Folder list" v-slot="{ ariaDescribedby }">
-                <b-form-radio-group
-                  id="btn-radios-3"
-                  v-model="selectedFolder"
-                  :options="folderList"
-                  :aria-describedby="ariaDescribedby"
-                  name="radio-btn-stacked"
-                  @change="selectFolder()"
-                  buttons
-                  stacked
-                ></b-form-radio-group>
-              </b-form-group>
-            </b-col>
-          </b-row>
-          <b-row>
-            <b-col>
-              <div>
+              <div class="withMargin">
                 <b-form-group
                   label="Search by tag"
                   v-slot="{ ariaDescribedby }"
@@ -99,10 +60,68 @@
               </div>
             </b-col>
           </b-row>
+          <b-row>
+            <b-col>
+              <div class="withMargin">
+                <b-form-group label="Search in folder" v-slot="{ ariaDescribedby }">
+                  <b-form-radio-group
+                    id="btn-radios-3"
+                    v-model="selectedFolder"
+                    :options="folderList"
+                    :aria-describedby="ariaDescribedby"
+                    name="radio-btn-stacked"
+                    @change="selectFolder()"
+                    buttons
+                    stacked
+                  ></b-form-radio-group>
+                </b-form-group>
+              </div>
+            </b-col>
+          </b-row>
+          <b-row>
+            <b-col>
+              <div class="withMargin">
+                <b-button @click="savePicture()" variant="outline-primary">Save Picture and Tags</b-button>
+              </div>
+            </b-col>
+          </b-row>
+          <b-row>
+            <b-col>
+              <!-- some space -->
+              <div class="withBigMargin"/>
+              <hr>
+              <div class="withBigMargin"/>
+            </b-col>
+          </b-row>
+          <b-row>
+            <b-col>
+              <div class="withMargin">
+                <b-button @click="addTag()" variant="outline-primary">Add Tag</b-button>
+              </div>
+            </b-col>
+            <b-col>
+              <div class="withMargin">
+                <b-form-input v-model="newTagName" placeholder="Enter new tag"></b-form-input>
+              </div>
+            </b-col>
+          </b-row>
+          <b-row>
+            <b-col>
+              <div class="withMargin">
+                <b-form-group
+                  label="Folder list"
+                >
+                  <b-form-input v-model="selectedFolder" placeholder="Enter folder"></b-form-input>
+                </b-form-group>
+                <b-button @click="addFolder()" variant="outline-primary">Add Folder</b-button>
+                <b-button @click="removeFolder()" variant="outline-primary">Remove Folder</b-button>
+              </div>
+            </b-col>
+          </b-row>          
         </b-col>
       </b-row>
     </b-container>
-  </div>
+  </b-container>
 </template>
 
 <script>
@@ -127,7 +146,9 @@ export default {
   },
   watch: {
     selectedPicture: function (val) {
-      this.getPictureTags(this.selectedFolder, val)
+      if (val != "") {
+        this.getPictureTags(this.selectedFolder, val)
+      }
     },
 
     searchTags: function () {
@@ -136,11 +157,11 @@ export default {
   },
   methods: {
     savePicture: function () {
-      if (this.selectedPicture != "" && this.selectedFolder != "") {
+
+      if (this.selectedPicture != "") {
         let options = {
-          selectedTags: this.selectedTags,
-          folderName:   this.selectedFolder,
-          pictureName:  this.selectedPicture
+          selectedTags:     this.selectedTags,
+          selectedPicture:  this.selectedPicture,
         }
         axios.post('/api/savePicture', options).then(response => {
           console.log('savePicture response: ', response.data.msg)
@@ -230,6 +251,7 @@ export default {
     },
 
     nextPictureNumber: function() {
+      console.log(this.pictureList.length)
       if (this.pictureNumber + 1 == this.pictureList.length) this.pictureNumber = 0
       else this.pictureNumber += 1
     },
@@ -244,7 +266,9 @@ export default {
       this.pictureList.length = 0
       this.selectedPicture = ""
       this.pictureUrl = ""
+      this.selectedTags.length = 0
       if (byMethod == 'by-folder') {
+        this.searchTags.length = 0
         if (this.selectedFolder != "") {
           let options = {
             chriterion: byMethod,
@@ -262,6 +286,7 @@ export default {
         }
       }
       if (byMethod == 'by-tag') {
+        this.selectedFolder = ""
         if (this.searchTags.length > 0) {
           let options = {
             chriterion: byMethod,
@@ -281,7 +306,9 @@ export default {
     },
 
     getPicture: function() {
+      console.log('getPicture', this.pictureNumber)
       this.selectedPicture = this.pictureList[this.pictureNumber]
+      console.log('getPicture', this.selectedPicture)
       let options = {
         selectedPicture: this.selectedPicture
       }
@@ -307,4 +334,16 @@ export default {
 </script>
 
 <style scoped>
+div.withMargin {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  /* margin-right: 150px;
+  margin-left: 80px; */
+}
+div.withBigMargin {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  /* margin-right: 150px;
+  margin-left: 80px; */
+}
 </style>

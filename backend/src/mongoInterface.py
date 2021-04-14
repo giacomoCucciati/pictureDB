@@ -30,6 +30,13 @@ class MongoInterface:
       else:
         newtags = { "$set": { "tags": selectedTags} }
         self.picturesTable.update_one({'folder': folderName, 'picture': pictureName}, newtags)
+    
+    def updatePictureTags(self, picId, selectedTags):
+      picture = self.picturesTable.find_one(ObjectId(picId))
+      if picture==None:
+        print('Error in updatePictureTags')
+      newtags = { "$set": { "tags": selectedTags} }
+      self.picturesTable.update_one({"_id":picId}, newtags)
 
     def getTagList(self):
       tagList = []

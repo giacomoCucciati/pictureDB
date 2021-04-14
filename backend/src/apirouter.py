@@ -26,8 +26,12 @@ def savePicture():
   global mongo_interface
   print("Begin savePicture")
   params = request.get_json(force=True)
-  print(params['folderName'], params['pictureName'], params['selectedTags'])
-  mongo_interface.savePicture(params['folderName'], params['pictureName'], params['selectedTags'])
+  if params['selectedPicture']['method'] == 'by-folder':
+    print(params['selectedPicture']['dir'], params['selectedPicture']['filename'], params['selectedTags'])
+    mongo_interface.savePicture(params['selectedPicture']['dir'], params['selectedPicture']['filename'], params['selectedTags'])
+  if params['selectedPicture']['method'] == 'by-tag':
+    print(params['selectedPicture']['pictureId'], params['selectedTags'])
+    mongo_interface.updatePictureTags(params['selectedPicture']['pictureId'], params['selectedTags'])
   print("End savePicture")
   return jsonify({'msg':'ciao'})
 
@@ -46,6 +50,7 @@ def getPictureTags():
   print("Begin getPictureTags")
   params = request.get_json(force=True)
   pictureTags = []
+  print(params['selectedPicture'])
   if params['selectedPicture']['method'] == 'by-folder':
     pictureTags = mongo_interface.getPictureTagsByFolder(params['selectedPicture']['dir'], params['selectedPicture']['filename'])
   if params['selectedPicture']['method'] == 'by-tag':
