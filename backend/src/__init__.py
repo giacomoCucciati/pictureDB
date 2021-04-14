@@ -7,7 +7,7 @@ socketio = SocketIO()
 
 def create_app(debug=False):
     """Create an application."""
-    #app = Flask(__name__,static_folder='../../frontend/dist')
+#    app = Flask(__name__,static_folder='../../frontend/dist')
     app = Flask(__name__,static_folder='../static')
 
     app.debug = debug
