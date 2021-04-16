@@ -8,7 +8,7 @@ socketio = SocketIO()
 def create_app(debug=False):
     """Create an application."""
 #    app = Flask(__name__,static_folder='../../frontend/dist')
-    app = Flask(__name__,static_folder='../static')
+    app = Flask(__name__,static_folder='../frontend_dist')
 
     app.debug = debug
     # secret key for sessions
@@ -25,7 +25,7 @@ def create_app(debug=False):
 
     @app.route('/static/<path:path>')
     def dist_static(path):
-#        return send_from_directory("../../frontend/dist/static/", path)
-        return send_from_directory("../static/", path)
+        print(path)
+        return send_from_directory("../frontend_dist/static", path)
 
     return app

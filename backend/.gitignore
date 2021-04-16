@@ -1,2 +1,3 @@
 static/
+frontend_dist/
 *.pyc
