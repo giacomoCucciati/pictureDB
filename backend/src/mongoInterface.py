@@ -31,6 +31,13 @@ class MongoInterface:
         newtags = { "$set": { "tags": selectedTags} }
         self.picturesTable.update_one({'folder': folderName, 'picture': pictureName}, newtags)
     
+    def removePicture(self, selectedPicture):
+      if 'pictureId' in selectedPicture:
+        self.picturesTable.delete_many({"_id":selectedPicture['pictureId']})
+      else:
+        self.picturesTable.delete_many({"folder":selectedPicture['dir'], "picture":selectedPicture['filename']})
+
+
     def updatePictureTags(self, picId, selectedTags):
       picture = self.picturesTable.find_one(ObjectId(picId))
       if picture==None:
@@ -49,6 +56,9 @@ class MongoInterface:
       if tag==None:
         newEntry = {'tagName': newTagName}
         self.tagsTable.insert_one(newEntry)
+    
+    def removeTag(self, tagName):
+      self.tagsTable.delete_many({'tagName': tagName})  
     
     def getPictureTagsByFolder(self, folderName, pictureName):
       pictureTags = []
@@ -88,3 +98,8 @@ class MongoInterface:
       img.save(img_io, 'JPEG', quality=30)
       img_io.seek(0)
       return base64.b64encode(img_io.read()).decode("utf-8")
+    
+    def deleteDb(self):
+      self.foldersTable.delete_many({})
+      self.tagsTable.delete_many({})
+      self.picturesTable.delete_many({})

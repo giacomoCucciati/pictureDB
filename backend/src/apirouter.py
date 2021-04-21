@@ -35,6 +35,16 @@ def savePicture():
   print("End savePicture")
   return jsonify({'msg':'ciao'})
 
+@apirouter.route('/removePicture',methods=['POST'])
+def removePicture():
+  global mongo_interface
+  print("Begin removePicture")
+  params = request.get_json(force=True)
+  print(params['selectedPicture'])
+  mongo_interface.removePicture(params['selectedPicture'])
+  print("End removePicture")
+  return jsonify({'msg':'ciao'})
+
 @apirouter.route('/insertNewTag',methods=['POST'])
 def insertNewTag():
   global mongo_interface
@@ -42,6 +52,15 @@ def insertNewTag():
   params = request.get_json(force=True)
   mongo_interface.insertNewTag(params['newTagName'])
   print("End insertNewTag")
+  return jsonify({'msg':'ciao'})
+
+@apirouter.route('/removeTag',methods=['POST'])
+def removeTag():
+  global mongo_interface
+  print("Begin removeTag")
+  params = request.get_json(force=True)
+  mongo_interface.removeTag(params['tagName'])
+  print("End removeTag")
   return jsonify({'msg':'ciao'})
 
 @apirouter.route('/getPictureTags',methods=['POST'])
@@ -148,3 +167,8 @@ def getPictureList():
   
   return jsonify({'msg':'ciao'})
 
+@apirouter.route('/deleteDb',methods=['GET'])
+def deleteDb():
+  global mongo_interface
+  mongo_interface.deleteDb()
+  return jsonify({'msg':'ciao'})

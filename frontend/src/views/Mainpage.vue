@@ -82,6 +82,7 @@
             <b-col>
               <div class="withMargin">
                 <b-button @click="savePicture()" variant="outline-primary">Save Picture and Tags</b-button>
+                <b-button @click="removePicture()" variant="outline-primary">Remove Picture Tags</b-button>
               </div>
             </b-col>
           </b-row>
@@ -97,12 +98,21 @@
             <b-col>
               <div class="withMargin">
                 <b-button @click="addTag()" variant="outline-primary">Add Tag</b-button>
+                <b-button @click="removeTag()" variant="outline-primary">Remove Tag</b-button>
               </div>
             </b-col>
             <b-col>
               <div class="withMargin">
                 <b-form-input v-model="newTagName" placeholder="Enter new tag"></b-form-input>
               </div>
+            </b-col>
+          </b-row>
+          <b-row>
+            <b-col>
+              <!-- some space -->
+              <div class="withBigMargin"/>
+              <hr>
+              <div class="withBigMargin"/>
             </b-col>
           </b-row>
           <b-row>
@@ -117,7 +127,18 @@
                 <b-button @click="removeFolder()" variant="outline-primary">Remove Folder</b-button>
               </div>
             </b-col>
-          </b-row>          
+          </b-row>
+          <b-row>
+            <b-col>
+              <div class="withMargin">
+                <!-- Using value -->
+                <b-button v-b-modal="'my-modal'">Delete DB</b-button>
+
+                <!-- The modal -->
+                <b-modal id="my-modal" @ok="deleteDB()">Do you really want to delete the full DB?</b-modal>
+              </div>
+            </b-col>
+          </b-row>
         </b-col>
       </b-row>
     </b-container>
@@ -169,6 +190,18 @@ export default {
       }
     },
 
+    removePicture: function () {
+
+      if (this.removePicture != "") {
+        let options = {
+          selectedPicture:  this.selectedPicture,
+        }
+        axios.post('/api/removePicture', options).then(response => {
+          console.log('removePicture response: ', response.data.msg)
+        })
+      }
+    },
+
     addTag: function() {
       let options = {
         newTagName: this.newTagName
@@ -179,11 +212,22 @@ export default {
       })
     },
 
+    removeTag: function() {
+      let options = {
+        tagName: this.newTagName
+      }
+      axios.post('/api/removeTag', options).then(response => {
+        console.log('removeTag response: ', response.data.msg)
+        this.getTagList()
+      })
+    },
+
     getTagList: function() {
       axios.get('/api/getTagList').then(response => {
         console.log('getTagList response: ', response.data.msg)
         let tagListFromDB = response.data.tagList
         this.tagList.length = 0
+        this.selectedTags.length=0
         for (let i in tagListFromDB) {
           this.tagList.push({text: tagListFromDB[i], value: tagListFromDB[i]})
         }
@@ -279,7 +323,6 @@ export default {
             this.pictureList = response.data.pictureList
             console.log('getPictureList response: ', response.data.msg)
             if (this.pictureList.length > 0) {
-              this.pictureNumber = 0
               this.getPicture()
             }
           })
@@ -297,7 +340,6 @@ export default {
             this.pictureList = response.data.pictureList
             console.log('getPictureList response: ', response.data.msg)
             if (this.pictureList.length > 0) {
-              this.pictureNumber = 0
               this.getPicture()
             }
           })
@@ -321,6 +363,19 @@ export default {
         } else {
           console.log('No picture found')
         }
+      })
+    },
+
+    deleteDB: function() {
+      axios.get('/api/deleteDb').then(response => {
+        console.log('deleteDb response: ', response.data.msg)
+        this.getTagList()
+        this.getFolderList()
+        this.pictureNumber = 0
+        this.pictureList.length = 0
+        this.selectedPicture = ""
+        this.pictureUrl = ""
+        this.selectedTags.length = 0
       })
     }
 
