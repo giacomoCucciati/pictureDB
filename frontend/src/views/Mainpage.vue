@@ -6,7 +6,7 @@
           <b-row>
             <b-col cols="1">
               <div class="withMargin">
-                <b-button @click="getPrevPicture()" variant="outline-primary">-</b-button>
+                <b-button @click="getPrevPicture()" :disabled="noPicturesDisable()" variant="outline-primary">-</b-button>
               </div>
             </b-col>
             <b-col cols="10">
@@ -16,7 +16,7 @@
             </b-col>
             <b-col cols="1">
               <div class="withMargin">
-                <b-button @click="getNextPicture()" variant="outline-primary">+</b-button>
+                <b-button @click="getNextPicture()" :disabled="noPicturesDisable()" variant="outline-primary">+</b-button>
               </div>
             </b-col>
           </b-row>
@@ -169,14 +169,25 @@ export default {
     selectedPicture: function (val) {
       if (val != "") {
         this.getPictureTags(this.selectedFolder, val)
-      }
+      } else {
+        this.selectedTags.length = 0
+      } 
     },
 
     searchTags: function () {
+      this.selectedFolder = "",
       this.getPictureList('by-tag')
     }
   },
   methods: {
+
+    noPicturesDisable: function() {
+      if (this.pictureList.length === 0) {
+        return true
+      }
+      return false
+    },
+
     savePicture: function () {
 
       if (this.selectedPicture != "") {
@@ -203,13 +214,16 @@ export default {
     },
 
     addTag: function() {
-      let options = {
-        newTagName: this.newTagName
+      this.newTagName = this.newTagName.trim()
+      if (this.newTagName !== "") {
+        let options = {
+          newTagName: this.newTagName
+        }
+        axios.post('/api/insertNewTag', options).then(response => {
+          console.log('insertNewTag response: ', response.data.msg)
+          this.getTagList()
+        })
       }
-      axios.post('/api/insertNewTag', options).then(response => {
-        console.log('insertNewTag response: ', response.data.msg)
-        this.getTagList()
-      })
     },
 
     removeTag: function() {
