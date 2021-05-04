@@ -48,17 +48,17 @@ class MongoInterface:
     def getTagList(self):
       tagList = []
       for tag in self.tagsTable.find():
-        tagList.append(tag['tagName'])
+        tagList.append({'tagName': tag['tagName'], 'tagGroup':tag['tagGroup']})
       return tagList
 
-    def insertNewTag(self, newTagName):
-      tag = self.tagsTable.find_one({'tagName': newTagName})
+    def insertNewTag(self, tagName, tagGroup):
+      tag = self.tagsTable.find_one({'tagName': tagName, 'tagGroup': tagGroup})
       if tag==None:
-        newEntry = {'tagName': newTagName}
+        newEntry = {'tagName': newTagName, 'tagGroup': newTagGroup}
         self.tagsTable.insert_one(newEntry)
     
-    def removeTag(self, tagName):
-      self.tagsTable.delete_many({'tagName': tagName})  
+    def removeTag(self, tagName, tagGroup):
+      self.tagsTable.delete_many({'tagName': tagName, 'tagGroup': tagGroup})  
     
     def getPictureTagsByFolder(self, folderName, pictureName):
       pictureTags = []

@@ -11,7 +11,7 @@ import imghdr
 
 apirouter = Blueprint("router", __name__)
 mongo_interface = MongoInterface()
-
+tag_groups = ['Persone','Luoghi','Anno','Varie']
 
 @apirouter.route('/getTagList',methods=['GET'])
 def getTagList():
@@ -19,7 +19,7 @@ def getTagList():
   tagList = mongo_interface.getTagList()
   print(tagList)
   print("End getTagList")
-  return jsonify({'msg':'ciao','tagList':tagList})
+  return jsonify({'msg':'ciao', 'tagGroups':tag_groups, 'tagList':tagList})
 
 @apirouter.route('/savePicture',methods=['POST'])
 def savePicture():
@@ -50,7 +50,7 @@ def insertNewTag():
   global mongo_interface
   print("Begin insertNewTag")
   params = request.get_json(force=True)
-  mongo_interface.insertNewTag(params['newTagName'])
+  mongo_interface.insertNewTag(params['tagName'], params['tagGroup'])
   print("End insertNewTag")
   return jsonify({'msg':'ciao'})
 
@@ -59,7 +59,7 @@ def removeTag():
   global mongo_interface
   print("Begin removeTag")
   params = request.get_json(force=True)
-  mongo_interface.removeTag(params['tagName'])
+  mongo_interface.removeTag(params['tagName'], params['tagGroup'])
   print("End removeTag")
   return jsonify({'msg':'ciao'})
 

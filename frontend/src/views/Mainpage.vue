@@ -43,20 +43,10 @@
         <b-col cols="4">
           <b-row>
             <b-col>
-              <div class="withMargin">
-                <b-form-group
-                  label="Search by tag"
-                  v-slot="{ ariaDescribedby }"
-                >
-                  <b-form-checkbox-group
-                    v-model="searchTags"
-                    :options="tagList"
-                    :aria-describedby="ariaDescribedby"
-                    name="buttons-1"
-                    buttons
-                    button-variant="outline-primary"
-                  ></b-form-checkbox-group>
-                </b-form-group>
+              <div class="mt-3">
+                <b-button-group>
+                  <b-button v-for="group in tagGroups" :key="group" @click="showModal(group)">{{group}}</b-button>
+                </b-button-group>
               </div>
             </b-col>
           </b-row>
@@ -97,27 +87,6 @@
           <b-row>
             <b-col>
               <div class="withMargin">
-                <b-button @click="addTag()" variant="outline-primary">Add Tag</b-button>
-                <b-button @click="removeTag()" variant="outline-primary">Remove Tag</b-button>
-              </div>
-            </b-col>
-            <b-col>
-              <div class="withMargin">
-                <b-form-input v-model="newTagName" placeholder="Enter new tag"></b-form-input>
-              </div>
-            </b-col>
-          </b-row>
-          <b-row>
-            <b-col>
-              <!-- some space -->
-              <div class="withBigMargin"/>
-              <hr>
-              <div class="withBigMargin"/>
-            </b-col>
-          </b-row>
-          <b-row>
-            <b-col>
-              <div class="withMargin">
                 <b-form-group
                   label="Folder list"
                 >
@@ -142,6 +111,54 @@
         </b-col>
       </b-row>
     </b-container>
+    <div>
+      <b-modal ref="tag-modal" ok-only>
+        <template #modal-header="">
+          <h5>Tags in {{selectedGroup}}</h5>
+        </template>
+        <b-container>
+          <b-row>
+            <b-col>
+              <div class="withMargin">
+                <b-form-group
+                  v-slot="{ ariaDescribedby }"
+                >
+                  <b-form-checkbox-group
+                    v-model="searchTags"
+                    :options="tagListForModal"
+                    :aria-describedby="ariaDescribedby"
+                    name="buttons-1"
+                    buttons
+                    button-variant="outline-primary"
+                  ></b-form-checkbox-group>
+                </b-form-group>
+              </div>
+            </b-col>
+          </b-row>
+          <b-row>
+            <b-col>
+              <!-- some space -->
+              <div class="withBigMargin"/>
+              <hr>
+              <div class="withBigMargin"/>
+            </b-col>
+          </b-row>
+          <b-row>
+            <b-col>
+              <div class="withMargin">
+                <b-button @click="addTag(selectedGroup)" variant="outline-primary">Add Tag</b-button>
+                <b-button @click="removeTag(selectedGroup)" variant="outline-primary">Remove Tag</b-button>
+              </div>
+            </b-col>
+            <b-col>
+              <div class="withMargin">
+                <b-form-input v-model="insertTagName" placeholder="Enter tag"></b-form-input>
+              </div>
+            </b-col>
+          </b-row>
+        </b-container>
+      </b-modal>
+    </div>
   </b-container>
 </template>
 
@@ -156,13 +173,16 @@ export default {
       pictureUrl: "",
       selectedTags: [],
       searchTags: [],
-      newTagName: "",
+      insertTagName: "",
       tagList: [],
+      tagListForModal: [],
+      tagGroups: [],
       selectedFolder: "",
       folderList: [],
       pictureNumber: 0,
       selectedPicture: "",
-      pictureList: []
+      pictureList: [],
+      selectedGroup: ""
     }
   },
   watch: {
@@ -180,6 +200,16 @@ export default {
     }
   },
   methods: {
+    showModal(group) {
+      this.selectedGroup = group
+      this.tagListForModal.length = 0
+      for (let i in this.tagList) {
+        if (this.tagList[i]['group'] === group) {
+          this.tagListForModal.push(this.tagList[i])
+        }
+      }
+      this.$refs['tag-modal'].show()
+    },
 
     noPicturesDisable: function() {
       if (this.pictureList.length === 0) {
@@ -213,11 +243,12 @@ export default {
       }
     },
 
-    addTag: function() {
-      this.newTagName = this.newTagName.trim()
-      if (this.newTagName !== "") {
+    addTag: function(tagGroup) {
+      this.insertTagName = this.insertTagName.trim()
+      if (this.insertTagName !== "") {
         let options = {
-          newTagName: this.newTagName
+          tagName: this.insertTagName,
+          tagGroup: tagGroup
         }
         axios.post('/api/insertNewTag', options).then(response => {
           console.log('insertNewTag response: ', response.data.msg)
@@ -226,9 +257,10 @@ export default {
       }
     },
 
-    removeTag: function() {
+    removeTag: function(tagGroup) {
       let options = {
-        tagName: this.newTagName
+        tagName: this.insertTagName,
+        tagGroup: tagGroup
       }
       axios.post('/api/removeTag', options).then(response => {
         console.log('removeTag response: ', response.data.msg)
@@ -240,10 +272,12 @@ export default {
       axios.get('/api/getTagList').then(response => {
         console.log('getTagList response: ', response.data.msg)
         let tagListFromDB = response.data.tagList
+        this.tagGroups = response.data.tagGroups
         this.tagList.length = 0
-        this.selectedTags.length=0
+        this.selectedTags.length = 0
+        this.insertTagName = ""
         for (let i in tagListFromDB) {
-          this.tagList.push({text: tagListFromDB[i], value: tagListFromDB[i]})
+          this.tagList.push({text: tagListFromDB[i]['tagName'], value: tagListFromDB[i]['tagName'], group: tagListFromDB[i]['tagGroup']})
         }
       })
     },
