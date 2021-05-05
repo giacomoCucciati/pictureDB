@@ -17,7 +17,6 @@ tag_groups = ['Persone','Luoghi','Anno','Varie']
 def getTagList():
   print("Begin getTagList")
   tagList = mongo_interface.getTagList()
-  print(tagList)
   print("End getTagList")
   return jsonify({'msg':'ciao', 'tagGroups':tag_groups, 'tagList':tagList})
 
@@ -26,12 +25,8 @@ def savePicture():
   global mongo_interface
   print("Begin savePicture")
   params = request.get_json(force=True)
-  if params['selectedPicture']['method'] == 'by-folder':
-    print(params['selectedPicture']['dir'], params['selectedPicture']['filename'], params['selectedTags'])
-    mongo_interface.savePicture(params['selectedPicture']['dir'], params['selectedPicture']['filename'], params['selectedTags'])
-  if params['selectedPicture']['method'] == 'by-tag':
-    print(params['selectedPicture']['pictureId'], params['selectedTags'])
-    mongo_interface.updatePictureTags(params['selectedPicture']['pictureId'], params['selectedTags'])
+  print(params['selectedPictureId'], params['selectedTags'])
+  mongo_interface.updatePictureTags(params['selectedPictureId'], params['selectedTags'])
   print("End savePicture")
   return jsonify({'msg':'ciao'})
 
@@ -40,8 +35,8 @@ def removePicture():
   global mongo_interface
   print("Begin removePicture")
   params = request.get_json(force=True)
-  print(params['selectedPicture'])
-  mongo_interface.removePicture(params['selectedPicture'])
+  print(params['selectedPictureId'])
+  mongo_interface.removePicture(params['selectedPictureId'])
   print("End removePicture")
   return jsonify({'msg':'ciao'})
 
@@ -69,22 +64,39 @@ def getPictureTags():
   print("Begin getPictureTags")
   params = request.get_json(force=True)
   pictureTags = []
-  print(params['selectedPicture'])
-  if params['selectedPicture']['method'] == 'by-folder':
-    pictureTags = mongo_interface.getPictureTagsByFolder(params['selectedPicture']['dir'], params['selectedPicture']['filename'])
-  if params['selectedPicture']['method'] == 'by-tag':
-    picture = mongo_interface.getPictureById(params['selectedPicture']['pictureId'])
-    pictureTags = picture['tags']
+  print(params['selectedPictureId'])
+  
+  picture = mongo_interface.getPictureById(params['selectedPictureId'])
+  pictureTags = picture['tags']
   print("End getPictureTags")
   return jsonify({'msg':'ciao', 'pictureTags':pictureTags})
 
-@apirouter.route('/insertNewFolder',methods=['POST'])
-def insertNewFolder():
+@apirouter.route('/importFolder',methods=['POST'])
+def importFolder():
   global mongo_interface
-  print("Begin insertNewFolder")
+  print("Begin importFolder")
   params = request.get_json(force=True)
   mongo_interface.insertNewFolder(params['newFolder'])
-  print("End insertNewFolder")
+  # Now save all folder images in DB
+  imageExtensionAccepted = ['jpeg']
+  params = request.get_json(force=True)
+  filesInFolder = []
+  imagesInFolder = []
+  
+  for (dirpath, dirnames, filenames) in walk(params['newFolder']):
+    #filesInFolder.extend([join(dirpath,f) for f in filenames])
+    for filename in filenames:
+      filesInFolder.append({'dir':dirpath, 'filename': filename})
+    break # we stop the list at the first level of the directory (we don't look in subfolders)
+  
+  for myfile in filesInFolder:
+    if imghdr.what(join(myfile['dir'],myfile['filename'])) in imageExtensionAccepted:
+      imagesInFolder.append(myfile)
+
+  for image in imagesInFolder:
+    mongo_interface.savePicture(image['dir'], image['filename'], [])
+
+  print("End importFolder")
   return jsonify({'msg':'ciao'})
 
 @apirouter.route('/removeFolder',methods=['POST'])
@@ -110,63 +122,18 @@ def getPicture():
   imageExtensionAccepted = ['jpeg']
   print("Begin getPicturesFromFolder")
   params = request.get_json(force=True)
-  
-  if params['selectedPicture']['method'] == 'by-folder':
-    image = mongo_interface.buildPicture(params['selectedPicture']['dir'], params['selectedPicture']['filename'])
-    return jsonify({'msg':'ciao', 'picture': image})
-  if params['selectedPicture']['method'] == 'by-tag':
-    picture = mongo_interface.getPictureById(params['selectedPicture']['pictureId'])
-    print(picture)
-    image = mongo_interface.buildPicture(picture['folder'], picture['picture'])
-    return jsonify({'msg':'ciao', 'picture': image})
-  else:
-    return jsonify({'msg':'ciao'})
-    
-@apirouter.route('/getPicturesByTag',methods=['POST'])
-def getPicturesByTag():
-  global mongo_interface
-  params = request.get_json(force=True)
-  pictureList = mongo_interface.getPictureByTag(params['searchTagList'])
-  print(pictureList)
-  picture = mongo_interface.getPictureById(pictureList[0])
+  picture = mongo_interface.getPictureById(params['selectedPictureId'])
   print(picture)
-  image = mongo_interface.buildPicture(picture['folder'], picture['picture'])
-  return jsonify({'msg':'ciao', 'picture': image, 'dir':picture['folder'], 'filename': picture['picture'], 'pictureList': pictureList})
+  image = mongo_interface.buildPicture(picture['folder'], picture['filename'])
+  return jsonify({'msg':'ciao', 'picture': image})
 
 @apirouter.route('/getPictureList',methods=['POST'])
 def getPictureList():
   global mongo_interface
   params = request.get_json(force=True)
-  method = params['chriterion']
-  if method == 'by-folder':
-    imageExtensionAccepted = ['jpeg']
-    params = request.get_json(force=True)
-    print(params['selectedFolder'])
-    filesInFolder = []
-    imagesInFolder = []
-    
-    for (dirpath, dirnames, filenames) in walk(params['selectedFolder']):
-      #filesInFolder.extend([join(dirpath,f) for f in filenames])
-      for filename in filenames:
-        filesInFolder.append({'dir':dirpath, 'filename': filename, 'method': method})
-      break # we stop the list at the first level of the directory (we don't look in subfolders)
-    
-    for myfile in filesInFolder:
-      if imghdr.what(join(myfile['dir'],myfile['filename'])) in imageExtensionAccepted:
-        imagesInFolder.append(myfile)
-    
-    return jsonify({'msg':'ciao', 'pictureList': imagesInFolder})
+  pictureList = mongo_interface.getPictureByTag(params['searchTagList'])
+  return jsonify({'msg':'ciao', 'pictureList': pictureList})
   
-  if method == 'by-tag':
-    pictureList = mongo_interface.getPictureByTag(params['searchTagList'])
-    newPictureList = []
-    for pic in pictureList:
-      newPictureList.append({'pictureId': pic, 'method':method})
-    
-    return jsonify({'msg':'ciao', 'pictureList': newPictureList})
-  
-  return jsonify({'msg':'ciao'})
-
 @apirouter.route('/deleteDb',methods=['GET'])
 def deleteDb():
   global mongo_interface

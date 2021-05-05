@@ -73,24 +73,6 @@
           <b-row>
             <b-col>
               <div class="withMargin">
-                <b-form-group label="Search in folder" v-slot="{ ariaDescribedby }">
-                  <b-form-radio-group
-                    id="btn-radios-3"
-                    v-model="selectedFolder"
-                    :options="folderList"
-                    :aria-describedby="ariaDescribedby"
-                    name="radio-btn-stacked"
-                    @change="selectFolder()"
-                    buttons
-                    stacked
-                  ></b-form-radio-group>
-                </b-form-group>
-              </div>
-            </b-col>
-          </b-row>
-          <b-row>
-            <b-col>
-              <div class="withMargin">
                 <b-button @click="savePicture()" variant="outline-primary">Save Picture and Tags</b-button>
                 <b-button @click="removePicture()" variant="outline-primary">Remove Picture Tags</b-button>
               </div>
@@ -112,8 +94,8 @@
                 >
                   <b-form-input v-model="selectedFolder" placeholder="Enter folder"></b-form-input>
                 </b-form-group>
-                <b-button @click="addFolder()" variant="outline-primary">Add Folder</b-button>
-                <b-button @click="removeFolder()" variant="outline-primary">Remove Folder</b-button>
+                <b-button @click="importFolder()" variant="outline-primary">Import Folder</b-button>
+                <!-- <b-button @click="removeFolder()" variant="outline-primary" disabled>Remove Folder</b-button> -->
               </div>
             </b-col>
           </b-row>
@@ -230,13 +212,13 @@ export default {
       selectedFolder: "",
       folderList: [],
       pictureNumber: 0,
-      selectedPicture: "",
+      selectedPictureId: "",
       pictureList: [],
       selectedGroup: ""
     }
   },
   watch: {
-    selectedPicture: function (val) {
+    selectedPictureId: function (val) {
       if (val != "") {
         this.getPictureTags(this.selectedFolder, val)
       } else {
@@ -245,8 +227,7 @@ export default {
     },
 
     searchTags: function () {
-      this.selectedFolder = "",
-      this.getPictureList('by-tag')
+      this.getPictureList()
     }
   },
   methods: {
@@ -286,10 +267,10 @@ export default {
 
     savePicture: function () {
 
-      if (this.selectedPicture != "") {
+      if (this.selectedPictureId != "") {
         let options = {
           selectedTags:     this.selectedTags,
-          selectedPicture:  this.selectedPicture,
+          selectedPictureId:  this.selectedPictureId,
         }
         axios.post('/api/savePicture', options).then(response => {
           console.log('savePicture response: ', response.data.msg)
@@ -301,7 +282,7 @@ export default {
 
       if (this.removePicture != "") {
         let options = {
-          selectedPicture:  this.selectedPicture,
+          selectedPictureId:  this.selectedPictureId,
         }
         axios.post('/api/removePicture', options).then(response => {
           console.log('removePicture response: ', response.data.msg)
@@ -358,7 +339,7 @@ export default {
 
     getPictureTags: function() {
       let options = {
-        selectedPicture: this.selectedPicture
+        selectedPictureId: this.selectedPictureId
       }
       axios.post('/api/getPictureTags',options).then(response => {
         console.log('getPictureTags response: ', response.data.msg)
@@ -367,25 +348,27 @@ export default {
       })
     },
 
-    addFolder: function() {
+    importFolder: function() {
       let options = {
         newFolder: this.selectedFolder
       }
-      axios.post('/api/insertNewFolder',options).then(response => {
-        console.log('addFolder response: ', response.data.msg)
+      axios.post('/api/importFolder',options).then(response => {
+        console.log('importFolder response: ', response.data.msg)
         this.getFolderList()
+        this.searchTags.length = 0
+        this.getPictureList()
       })
     },
 
-    removeFolder: function() {
-      let options = {
-        badFolder: this.selectedFolder
-      }
-      axios.post('/api/removeFolder',options).then(response => {
-        console.log('removeFolder response: ', response.data.msg)
-        this.getFolderList()
-      })
-    },
+    // removeFolder: function() {
+    //   let options = {
+    //     badFolder: this.selectedFolder
+    //   }
+    //   axios.post('/api/removeFolder',options).then(response => {
+    //     console.log('removeFolder response: ', response.data.msg)
+    //     this.getFolderList()
+    //   })
+    // },
 
     recreateFolderList: function(newList) {
       this.folderList.length = 0
@@ -393,7 +376,6 @@ export default {
           this.folderList.push({text: newList[i], value: newList[i]})
       }
       this.selectedFolder = ""
-      this.pictureUrl = ""
     },
 
     getFolderList: function() {
@@ -413,10 +395,6 @@ export default {
       this.getPicture()
     },
 
-    selectFolder: function() {
-      this.getPictureList('by-folder')
-    },
-
     nextPictureNumber: function() {
       console.log(this.pictureList.length)
       if (this.pictureNumber + 1 == this.pictureList.length) this.pictureNumber = 0
@@ -428,56 +406,34 @@ export default {
       else this.pictureNumber -= 1
     },
 
-    getPictureList: function(byMethod) {
+    getPictureList: function() {
       this.pictureNumber = 0
       this.pictureList.length = 0
-      this.selectedPicture = ""
+      this.selectedPictureId = ""
       this.pictureUrl = ""
       this.selectedTags.length = 0
-      if (byMethod == 'by-folder') {
-        this.searchTags.length = 0
-        if (this.selectedFolder != "") {
-          let options = {
-            chriterion: byMethod,
-            selectedFolder: this.selectedFolder
-          }
-          axios.post('/api/getPictureList', options).then(response => {
-            
-            this.pictureList = response.data.pictureList
-            console.log('getPictureList response: ', response.data.msg)
-            if (this.pictureList.length > 0) {
-              this.getPicture()
-            }
-          })
-        }
+      this.selectedFolder = ""
+      // if (this.searchTags.length > 0) {
+      let options = {
+        searchTagList: this.searchTags
       }
-      if (byMethod == 'by-tag') {
-        this.selectedFolder = ""
-        if (this.searchTags.length > 0) {
-          let options = {
-            chriterion: byMethod,
-            searchTagList: this.searchTags
-          }
-          axios.post('/api/getPictureList', options).then(response => {
-            
-            this.pictureList = response.data.pictureList
-            console.log('getPictureList response: ', response.data.msg)
-            if (this.pictureList.length > 0) {
-              this.getPicture()
-            }
-          })
+      axios.post('/api/getPictureList', options).then(response => {
+        this.pictureList = response.data.pictureList
+        console.log('getPictureList response: ', response.data.msg)
+        if (this.pictureList.length > 0) {
+          this.getPicture()
         }
-      }
+      })
+      // }
     },
 
     getPicture: function() {
       console.log('getPicture', this.pictureNumber)
-      this.selectedPicture = this.pictureList[this.pictureNumber]
-      console.log('getPicture', this.selectedPicture)
+      this.selectedPictureId = this.pictureList[this.pictureNumber]
+      console.log('getPicture', this.selectedPictureId)
       let options = {
-        selectedPicture: this.selectedPicture
+        selectedPictureId: this.selectedPictureId
       }
-
       axios.post('/api/getPicture', options).then(response => {
         console.log('getPicture response: ', response.data.msg)
         if (Object.keys(response.data).includes('picture')) {
@@ -496,7 +452,7 @@ export default {
         this.getFolderList()
         this.pictureNumber = 0
         this.pictureList.length = 0
-        this.selectedPicture = ""
+        this.selectedPictureId = ""
         this.pictureUrl = ""
         this.selectedTags.length = 0
       })

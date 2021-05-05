@@ -23,20 +23,16 @@ class MongoInterface:
         self.picturesTable = self.db['pictures']
 
     def savePicture(self, folderName, pictureName, selectedTags):
-      picture = self.picturesTable.find_one({'folder': folderName, 'picture': pictureName})
+      picture = self.picturesTable.find_one({'folder': folderName, 'filename': pictureName})
       if picture==None:
-        newEntry = {'folder': folderName, 'picture': pictureName, 'tags':selectedTags}
+        newEntry = {'folder': folderName, 'filename': pictureName, 'tags':selectedTags}
         self.picturesTable.insert_one(newEntry)
       else:
         newtags = { "$set": { "tags": selectedTags} }
-        self.picturesTable.update_one({'folder': folderName, 'picture': pictureName}, newtags)
+        self.picturesTable.update_one({'folder': folderName, 'filename': pictureName}, newtags)
     
-    def removePicture(self, selectedPicture):
-      if 'pictureId' in selectedPicture:
-        self.picturesTable.delete_many({"_id":selectedPicture['pictureId']})
-      else:
-        self.picturesTable.delete_many({"folder":selectedPicture['dir'], "picture":selectedPicture['filename']})
-
+    def removePicture(self, selectedPictureId):
+      self.picturesTable.delete_many({"_id":selectedPictureId})
 
     def updatePictureTags(self, picId, selectedTags):
       picture = self.picturesTable.find_one(ObjectId(picId))
@@ -59,13 +55,6 @@ class MongoInterface:
     
     def removeTag(self, tagName, tagGroup):
       self.tagsTable.delete_many({'tagName': tagName, 'tagGroup': tagGroup})  
-    
-    def getPictureTagsByFolder(self, folderName, pictureName):
-      pictureTags = []
-      picture = self.picturesTable.find_one({'folder':folderName, 'picture': pictureName})
-      if picture!=None:
-        pictureTags = picture['tags']
-      return pictureTags
 
     def insertNewFolder(self, newFolderName):
       tag = self.foldersTable.find_one({'folderName': newFolderName})
@@ -84,9 +73,13 @@ class MongoInterface:
     
     def getPictureByTag(self, searchTagList):
       buildList = []
-      for tag in searchTagList:
-        buildList.append({"tags":tag})
-      pictures = [str(id) for id in self.picturesTable.find({"$and":buildList}).distinct('_id')]
+      if len(searchTagList) > 0:
+        for tag in searchTagList:
+          buildList.append({"tags":tag})
+        pictures = [str(id) for id in self.picturesTable.find({"$and":buildList}).distinct('_id')]
+      else:
+        print("mongoInterface::getPictureByTag Get pictures with no tag")
+        pictures = [str(id) for id in self.picturesTable.find({"tags":[]}).distinct('_id')]
       return pictures
 
     def getPictureById(self, picId):
