@@ -54,7 +54,7 @@ class MongoInterface:
     def insertNewTag(self, tagName, tagGroup):
       tag = self.tagsTable.find_one({'tagName': tagName, 'tagGroup': tagGroup})
       if tag==None:
-        newEntry = {'tagName': newTagName, 'tagGroup': newTagGroup}
+        newEntry = {'tagName': tagName, 'tagGroup': tagGroup}
         self.tagsTable.insert_one(newEntry)
     
     def removeTag(self, tagName, tagGroup):

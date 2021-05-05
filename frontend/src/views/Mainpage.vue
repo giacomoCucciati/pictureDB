@@ -21,21 +21,26 @@
             </b-col>
           </b-row>
           <b-row>
-            <b-col>              
+            <b-col>
               <div class="withMargin">
-                <b-form-group
-                  label="Picture tags"
-                  v-slot="{ ariaDescribedby }"
-                >
-                  <b-form-checkbox-group
-                    v-model="selectedTags"
-                    :options="tagList"
-                    :aria-describedby="ariaDescribedby"
-                    name="buttons-1"
-                    buttons
-                    button-variant="outline-primary"
-                  ></b-form-checkbox-group>
-                </b-form-group>
+                <b-button-group>
+                  <b-button v-for="group in tagGroups" :key="group" @click="showPictureModal(group)">{{group}}</b-button>
+                </b-button-group>
+              </div>
+              <div class="withMargin">          
+                <b-form-tags v-model="selectedTags" no-outer-focus>
+                  <template v-slot="{ tags, tagVariant, removeTag }">                  
+                    <div class="d-inline-block">
+                      <b-form-tag
+                        v-for="tag in tags"
+                        @remove="removeTag(tag)"
+                        :key="tag"
+                        :title="tag"
+                        :variant="tagVariant"
+                      >{{ tag }}</b-form-tag>
+                    </div>
+                  </template>
+                </b-form-tags>
               </div>
             </b-col>
           </b-row>
@@ -43,10 +48,25 @@
         <b-col cols="4">
           <b-row>
             <b-col>
-              <div class="mt-3">
+              <div class="withMargin">
                 <b-button-group>
-                  <b-button v-for="group in tagGroups" :key="group" @click="showModal(group)">{{group}}</b-button>
+                  <b-button v-for="group in tagGroups" :key="group" @click="showModal(group)" variant="success">{{group}}</b-button>
                 </b-button-group>
+              </div>
+              <div class="withMargin">          
+                <b-form-tags v-model="searchTags" no-outer-focus>
+                  <template v-slot="{ tags, tagVariant, removeTag }">                  
+                    <div class="d-inline-block">
+                      <b-form-tag
+                        v-for="tag in tags"
+                        @remove="removeTag(tag)"
+                        :key="tag"
+                        :title="tag"
+                        :variant="tagVariant"
+                      >{{ tag }}</b-form-tag>
+                    </div>
+                  </template>
+                </b-form-tags>
               </div>
             </b-col>
           </b-row>
@@ -112,7 +132,13 @@
       </b-row>
     </b-container>
     <div>
-      <b-modal ref="tag-modal" ok-only>
+      <b-modal 
+        ref="tag-modal" 
+        ok-only 
+        no-close-on-esc 
+        no-close-on-backdrop
+        @ok="handleOk"
+      >
         <template #modal-header="">
           <h5>Tags in {{selectedGroup}}</h5>
         </template>
@@ -153,6 +179,30 @@
             <b-col>
               <div class="withMargin">
                 <b-form-input v-model="insertTagName" placeholder="Enter tag"></b-form-input>
+              </div>
+            </b-col>
+          </b-row>
+        </b-container>
+      </b-modal>
+    </div>
+    <div>
+      <b-modal ref="picture-modal" ok-only>
+        <b-container>
+          <b-row>
+            <b-col>
+              <div class="withMargin">
+                <b-form-group
+                  v-slot="{ ariaDescribedby }"
+                >
+                  <b-form-checkbox-group
+                    v-model="selectedTags"
+                    :options="tagListForModal"
+                    :aria-describedby="ariaDescribedby"
+                    name="buttons-1"
+                    buttons
+                    button-variant="outline-primary"
+                  ></b-form-checkbox-group>
+                </b-form-group>
               </div>
             </b-col>
           </b-row>
@@ -200,7 +250,7 @@ export default {
     }
   },
   methods: {
-    showModal(group) {
+    showModal: function(group) {
       this.selectedGroup = group
       this.tagListForModal.length = 0
       for (let i in this.tagList) {
@@ -209,6 +259,22 @@ export default {
         }
       }
       this.$refs['tag-modal'].show()
+    },
+
+    showPictureModal: function(group) {
+      this.selectedGroup = group
+      this.tagListForModal.length = 0
+      for (let i in this.tagList) {
+        if (this.tagList[i]['group'] === group) {
+          this.tagListForModal.push(this.tagList[i])
+        }
+      }
+      this.$refs['picture-modal'].show()
+    },
+
+    handleOk: function() {
+      this.insertTagName = ""
+      this.tagListForModal.length = 0
     },
 
     noPicturesDisable: function() {
@@ -276,8 +342,16 @@ export default {
         this.tagList.length = 0
         this.selectedTags.length = 0
         this.insertTagName = ""
+        this.tagListForModal.length = 0
         for (let i in tagListFromDB) {
           this.tagList.push({text: tagListFromDB[i]['tagName'], value: tagListFromDB[i]['tagName'], group: tagListFromDB[i]['tagGroup']})
+        }
+        if (this.selectedGroup !== "") {
+          for (let i in this.tagList) {
+            if (this.tagList[i]['group'] === this.selectedGroup) {
+              this.tagListForModal.push(this.tagList[i])
+            }
+          }
         }
       })
     },
@@ -289,6 +363,7 @@ export default {
       axios.post('/api/getPictureTags',options).then(response => {
         console.log('getPictureTags response: ', response.data.msg)
         this.selectedTags = response.data.pictureTags
+        console.log(this.selectedTags)
       })
     },
 
