@@ -44,6 +44,14 @@
               </div>
             </b-col>
           </b-row>
+           <b-row>
+            <b-col>
+              <div class="withMargin">
+                <b-button @click="savePicture()" variant="outline-primary">Save Picture and Tags</b-button>
+                <b-button @click="removePicture()" variant="outline-primary">Remove Picture from DB</b-button>
+              </div>
+            </b-col>
+          </b-row>
         </b-col>
         <b-col cols="4">
           <b-row>
@@ -72,14 +80,6 @@
           </b-row>
           <b-row>
             <b-col>
-              <div class="withMargin">
-                <b-button @click="savePicture()" variant="outline-primary">Save Picture and Tags</b-button>
-                <b-button @click="removePicture()" variant="outline-primary">Remove Picture Tags</b-button>
-              </div>
-            </b-col>
-          </b-row>
-          <b-row>
-            <b-col>
               <!-- some space -->
               <div class="withBigMargin"/>
               <hr>
@@ -89,14 +89,32 @@
           <b-row>
             <b-col>
               <div class="withMargin">
-                <b-form-group
-                  label="Folder list"
-                >
+                <b-form-group label="Folder options">
                   <b-form-input v-model="selectedFolder" placeholder="Enter folder"></b-form-input>
                 </b-form-group>
                 <b-button @click="importFolder()" variant="outline-primary">Import Folder</b-button>
-                <!-- <b-button @click="removeFolder()" variant="outline-primary" disabled>Remove Folder</b-button> -->
               </div>
+            </b-col>
+          </b-row>
+          <b-row>
+            <b-col>
+              <b-form-group v-slot="{ ariaDescribedby }">
+                <b-form-radio-group
+                  v-model="selectedFolder"
+                  :options="folderList"
+                  :aria-describedby="ariaDescribedby"
+                  name="radios-stacked"
+                  stacked
+                ></b-form-radio-group>
+              </b-form-group>
+            </b-col>
+          </b-row>
+          <b-row>
+            <b-col>
+              <!-- some space -->
+              <div class="withBigMargin"/>
+              <hr>
+              <div class="withBigMargin"/>
             </b-col>
           </b-row>
           <b-row>
@@ -154,13 +172,13 @@
           <b-row>
             <b-col>
               <div class="withMargin">
-                <b-button @click="addTag(selectedGroup)" variant="outline-primary">Add Tag</b-button>
-                <b-button @click="removeTag(selectedGroup)" variant="outline-primary">Remove Tag</b-button>
+                <b-form-input v-model="insertTagName" placeholder="Enter tag"></b-form-input>
               </div>
             </b-col>
             <b-col>
               <div class="withMargin">
-                <b-form-input v-model="insertTagName" placeholder="Enter tag"></b-form-input>
+                <b-button @click="changeTagList('add-tag', selectedGroup)" variant="outline-primary">Add Tag</b-button>
+                <b-button @click="changeTagList('remove-tag', selectedGroup)" variant="outline-primary">Remove Tag</b-button>
               </div>
             </b-col>
           </b-row>
@@ -191,6 +209,15 @@
         </b-container>
       </b-modal>
     </div>
+    <div>
+      <b-modal ref="import-folder-modal" hide-footer title="Import folder">
+        <div class="d-block text-center">
+          <h3>La cartella e' gia' presente nel DB...</h3>
+        </div>
+        <b-button class="mt-3" variant="outline-danger" block @click="launchImportFolder('clear-tags')">Rimuovi tags delle foto gia' presenti</b-button>
+        <b-button class="mt-3" variant="outline-warning" block @click="launchImportFolder('keep-tags')">Aggiungi solo nuove foto</b-button>
+      </b-modal>
+    </div>
   </b-container>
 </template>
 
@@ -218,31 +245,22 @@ export default {
     }
   },
   watch: {
-    selectedPictureId: function (val) {
-      if (val != "") {
-        this.getPictureTags(this.selectedFolder, val)
-      } else {
-        this.selectedTags.length = 0
-      } 
-    },
-
     searchTags: function () {
       this.getPictureList()
     }
   },
   methods: {
     showModal: function(group) {
-      this.selectedGroup = group
-      this.tagListForModal.length = 0
-      for (let i in this.tagList) {
-        if (this.tagList[i]['group'] === group) {
-          this.tagListForModal.push(this.tagList[i])
-        }
-      }
+      this.buildGroupModal(group)
       this.$refs['tag-modal'].show()
     },
 
     showPictureModal: function(group) {
+      this.buildGroupModal(group)
+      this.$refs['picture-modal'].show()
+    },
+
+    buildGroupModal: function(group) {
       this.selectedGroup = group
       this.tagListForModal.length = 0
       for (let i in this.tagList) {
@@ -250,7 +268,6 @@ export default {
           this.tagListForModal.push(this.tagList[i])
         }
       }
-      this.$refs['picture-modal'].show()
     },
 
     handleOk: function() {
@@ -266,7 +283,6 @@ export default {
     },
 
     savePicture: function () {
-
       if (this.selectedPictureId != "") {
         let options = {
           selectedTags:     this.selectedTags,
@@ -279,8 +295,7 @@ export default {
     },
 
     removePicture: function () {
-
-      if (this.removePicture != "") {
+      if (this.selectedPictureId != "") {
         let options = {
           selectedPictureId:  this.selectedPictureId,
         }
@@ -290,29 +305,19 @@ export default {
       }
     },
 
-    addTag: function(tagGroup) {
+    changeTagList: function(action, tagGroup) {
       this.insertTagName = this.insertTagName.trim()
       if (this.insertTagName !== "") {
         let options = {
           tagName: this.insertTagName,
-          tagGroup: tagGroup
+          tagGroup: tagGroup,
+          action: action
         }
-        axios.post('/api/insertNewTag', options).then(response => {
-          console.log('insertNewTag response: ', response.data.msg)
+        axios.post('/api/changeTagList', options).then(response => {
+          console.log('changeTagList response: ', response.data.msg)
           this.getTagList()
         })
       }
-    },
-
-    removeTag: function(tagGroup) {
-      let options = {
-        tagName: this.insertTagName,
-        tagGroup: tagGroup
-      }
-      axios.post('/api/removeTag', options).then(response => {
-        console.log('removeTag response: ', response.data.msg)
-        this.getTagList()
-      })
     },
 
     getTagList: function() {
@@ -344,13 +349,24 @@ export default {
       axios.post('/api/getPictureTags',options).then(response => {
         console.log('getPictureTags response: ', response.data.msg)
         this.selectedTags = response.data.pictureTags
-        console.log(this.selectedTags)
       })
     },
 
     importFolder: function() {
+      for (let i in this.folderList) {
+        if (this.folderList[i]['value'] === this.selectedFolder) {
+          this.$refs['import-folder-modal'].show()
+          return
+        }
+      }
+      this.launchImportFolder('new-folder')
+    },
+
+    launchImportFolder: function(condition) {
+      this.$refs['import-folder-modal'].hide()
       let options = {
-        newFolder: this.selectedFolder
+        newFolder: this.selectedFolder,
+        directive: condition
       }
       axios.post('/api/importFolder',options).then(response => {
         console.log('importFolder response: ', response.data.msg)
@@ -360,28 +376,12 @@ export default {
       })
     },
 
-    // removeFolder: function() {
-    //   let options = {
-    //     badFolder: this.selectedFolder
-    //   }
-    //   axios.post('/api/removeFolder',options).then(response => {
-    //     console.log('removeFolder response: ', response.data.msg)
-    //     this.getFolderList()
-    //   })
-    // },
-
-    recreateFolderList: function(newList) {
-      this.folderList.length = 0
-      for (let i in newList) {
-          this.folderList.push({text: newList[i], value: newList[i]})
-      }
-      this.selectedFolder = ""
-    },
-
     getFolderList: function() {
       axios.get('/api/getFolderList').then(response => {
-        console.log('getFolderList response: ', response.data.msg)
-        this.recreateFolderList(response.data.folderList)
+        this.folderList.length = 0
+        for (let i in response.data.folderList) {
+          this.folderList.push({text:response.data.folderList[i], value:response.data.folderList[i]})
+        }
       })
     },
 
@@ -396,7 +396,6 @@ export default {
     },
 
     nextPictureNumber: function() {
-      console.log(this.pictureList.length)
       if (this.pictureNumber + 1 == this.pictureList.length) this.pictureNumber = 0
       else this.pictureNumber += 1
     },
@@ -428,9 +427,7 @@ export default {
     },
 
     getPicture: function() {
-      console.log('getPicture', this.pictureNumber)
       this.selectedPictureId = this.pictureList[this.pictureNumber]
-      console.log('getPicture', this.selectedPictureId)
       let options = {
         selectedPictureId: this.selectedPictureId
       }
@@ -438,7 +435,8 @@ export default {
         console.log('getPicture response: ', response.data.msg)
         if (Object.keys(response.data).includes('picture')) {
           // You can use following line if you do base64.b64encode on server side
-          this.pictureUrl = 'data:;base64,' + response.data.picture;  
+          this.pictureUrl = 'data:;base64,' + response.data.picture
+          this.getPictureTags()
         } else {
           console.log('No picture found')
         }
@@ -455,6 +453,8 @@ export default {
         this.selectedPictureId = ""
         this.pictureUrl = ""
         this.selectedTags.length = 0
+        this.folderList.length = 0
+        this.selectedFolder = ""
       })
     }
 
@@ -462,6 +462,7 @@ export default {
   mounted () {
     this.getTagList()
     this.getFolderList()
+    this.getPictureList()
     console.log('mounted')
   }
 }

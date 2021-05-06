@@ -22,24 +22,27 @@ class MongoInterface:
             self.db.create_collection('pictures')
         self.picturesTable = self.db['pictures']
 
-    def savePicture(self, folderName, pictureName, selectedTags):
+    def savePicture(self, folderName, pictureName, selectedTags, overwrite=True):
       picture = self.picturesTable.find_one({'folder': folderName, 'filename': pictureName})
+      print('savePicture',picture)
       if picture==None:
         newEntry = {'folder': folderName, 'filename': pictureName, 'tags':selectedTags}
         self.picturesTable.insert_one(newEntry)
-      else:
-        newtags = { "$set": { "tags": selectedTags} }
-        self.picturesTable.update_one({'folder': folderName, 'filename': pictureName}, newtags)
+      elif overwrite:
+        self.updatePictureTags(picture['_id'], selectedTags)
     
     def removePicture(self, selectedPictureId):
-      self.picturesTable.delete_many({"_id":selectedPictureId})
+      self.picturesTable.delete_many({"_id":ObjectId(selectedPictureId)})
 
     def updatePictureTags(self, picId, selectedTags):
       picture = self.picturesTable.find_one(ObjectId(picId))
       if picture==None:
         print('Error in updatePictureTags')
       newtags = { "$set": { "tags": selectedTags} }
-      self.picturesTable.update_one({"_id":picId}, newtags)
+      print('updatePictureTags newtags', newtags)
+      self.picturesTable.update_one({"_id":ObjectId(picId)}, newtags)
+      picture = self.picturesTable.find_one(ObjectId(picId))
+      print('after update', picture)
 
     def getTagList(self):
       tagList = []
@@ -57,13 +60,10 @@ class MongoInterface:
       self.tagsTable.delete_many({'tagName': tagName, 'tagGroup': tagGroup})  
 
     def insertNewFolder(self, newFolderName):
-      tag = self.foldersTable.find_one({'folderName': newFolderName})
-      if tag==None:
+      folder = self.foldersTable.find_one({'folderName': newFolderName})
+      if folder==None:
         newEntry = {'folderName': newFolderName}
         self.foldersTable.insert_one(newEntry)
-
-    def removeFolder(self, folderName):
-      self.foldersTable.delete_many({'folderName': folderName})
 
     def getFolderList(self):
       folderList = []

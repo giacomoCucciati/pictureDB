@@ -22,7 +22,6 @@ def getTagList():
 
 @apirouter.route('/savePicture',methods=['POST'])
 def savePicture():
-  global mongo_interface
   print("Begin savePicture")
   params = request.get_json(force=True)
   print(params['selectedPictureId'], params['selectedTags'])
@@ -32,7 +31,6 @@ def savePicture():
 
 @apirouter.route('/removePicture',methods=['POST'])
 def removePicture():
-  global mongo_interface
   print("Begin removePicture")
   params = request.get_json(force=True)
   print(params['selectedPictureId'])
@@ -40,27 +38,19 @@ def removePicture():
   print("End removePicture")
   return jsonify({'msg':'ciao'})
 
-@apirouter.route('/insertNewTag',methods=['POST'])
-def insertNewTag():
-  global mongo_interface
-  print("Begin insertNewTag")
+@apirouter.route('/changeTagList',methods=['POST'])
+def changeTagList():
+  print("Begin changeTagList")
   params = request.get_json(force=True)
-  mongo_interface.insertNewTag(params['tagName'], params['tagGroup'])
-  print("End insertNewTag")
-  return jsonify({'msg':'ciao'})
-
-@apirouter.route('/removeTag',methods=['POST'])
-def removeTag():
-  global mongo_interface
-  print("Begin removeTag")
-  params = request.get_json(force=True)
-  mongo_interface.removeTag(params['tagName'], params['tagGroup'])
-  print("End removeTag")
+  if params['action'] == 'add-tag':
+    mongo_interface.insertNewTag(params['tagName'], params['tagGroup'])
+  if params['action'] == 'remove-tag':
+    mongo_interface.removeTag(params['tagName'], params['tagGroup'])
+  print("End changeTagList")
   return jsonify({'msg':'ciao'})
 
 @apirouter.route('/getPictureTags',methods=['POST'])
 def getPictureTags():
-  global mongo_interface
   print("Begin getPictureTags")
   params = request.get_json(force=True)
   pictureTags = []
@@ -73,9 +63,9 @@ def getPictureTags():
 
 @apirouter.route('/importFolder',methods=['POST'])
 def importFolder():
-  global mongo_interface
   print("Begin importFolder")
   params = request.get_json(force=True)
+  print(params['directive'])
   mongo_interface.insertNewFolder(params['newFolder'])
   # Now save all folder images in DB
   imageExtensionAccepted = ['jpeg']
@@ -94,23 +84,18 @@ def importFolder():
       imagesInFolder.append(myfile)
 
   for image in imagesInFolder:
-    mongo_interface.savePicture(image['dir'], image['filename'], [])
+    if params['directive'] == 'new-folder':
+      mongo_interface.savePicture(image['dir'], image['filename'], [])
+    if params['directive'] == 'clear-tags':
+      mongo_interface.savePicture(image['dir'], image['filename'], [])
+    if params['directive'] == 'keep-tags':
+      mongo_interface.savePicture(image['dir'], image['filename'], [], overwrite=False)
 
   print("End importFolder")
   return jsonify({'msg':'ciao'})
 
-@apirouter.route('/removeFolder',methods=['POST'])
-def removeFolder():
-  global mongo_interface
-  print("Begin removeFolder")
-  params = request.get_json(force=True)
-  mongo_interface.removeFolder(params['badFolder'])
-  print("End removeFolder")
-  return jsonify({'msg':'ciao'})
-
 @apirouter.route('/getFolderList',methods=['GET'])
 def getFolderList():
-  global mongo_interface
   print("Begin getFolderList")
   folderList = mongo_interface.getFolderList()
   print("End getFolderList")
@@ -118,7 +103,6 @@ def getFolderList():
 
 @apirouter.route('/getPicture',methods=['POST'])
 def getPicture():
-  global mongo_interface
   imageExtensionAccepted = ['jpeg']
   print("Begin getPicturesFromFolder")
   params = request.get_json(force=True)
@@ -129,13 +113,11 @@ def getPicture():
 
 @apirouter.route('/getPictureList',methods=['POST'])
 def getPictureList():
-  global mongo_interface
   params = request.get_json(force=True)
   pictureList = mongo_interface.getPictureByTag(params['searchTagList'])
   return jsonify({'msg':'ciao', 'pictureList': pictureList})
   
 @apirouter.route('/deleteDb',methods=['GET'])
 def deleteDb():
-  global mongo_interface
   mongo_interface.deleteDb()
   return jsonify({'msg':'ciao'})
