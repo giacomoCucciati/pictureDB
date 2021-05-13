@@ -44,7 +44,7 @@
               </div>
             </b-col>
           </b-row>
-           <b-row>
+          <b-row>
             <b-col>
               <div class="withMargin">
                 <b-button @click="savePicture()" variant="outline-primary">Save Picture and Tags</b-button>
@@ -228,7 +228,6 @@ export default {
   name: 'MainPage',
   data () {
     return {
-      slide: 0,
       pictureUrl: "",
       selectedTags: [],
       searchTags: [],
