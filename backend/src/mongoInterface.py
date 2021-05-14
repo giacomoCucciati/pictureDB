@@ -88,7 +88,7 @@ class MongoInterface:
     def buildPicture(self, folder, filename):
       img = Image.open(join(folder, filename))
       img_io = io.BytesIO()
-      img.save(img_io, 'JPEG', quality=30)
+      img.save(img_io, 'JPEG', quality=10)
       img_io.seek(0)
       return base64.b64encode(img_io.read()).decode("utf-8")
     

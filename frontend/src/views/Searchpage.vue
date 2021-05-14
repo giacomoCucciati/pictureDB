@@ -1,36 +1,32 @@
 <template>
-  <b-container>
-    <b-container>
+  <b-container fluid>
+    <b-container fluid>
       <b-row>
         <b-col cols="8">
           <b-row v-if="pictureList.length>0">
             <b-col>
-              <b-row v-for="rowNum in (parseInt(pictureList.length/4)+1)" :key="'row'+rowNum">
-                <b-col v-for="colNum in 4" :key="'col'+colNum">
+              <b-row v-for="rowNum in (parseInt((pictureList.length-1)/4)+1)" :key="'row'+rowNum">
+                <b-col v-if="[(rowNum-1)*4+0]<pictureList.length">
                   <div class="withMargin">
-                    <b-img-lazy :src="getImageUrl((rowNum-1)*4+colNum-1)" alt="Image Missing?"></b-img-lazy>
+                    <b-img :src="temp_url[(rowNum-1)*4+0]" alt="Image Missing?"></b-img> 
+                  </div>
+                </b-col>
+                <b-col v-if="[(rowNum-1)*4+1]<pictureList.length">
+                  <div class="withMargin">
+                    <b-img :src="temp_url[(rowNum-1)*4+1]" alt="Image Missing?"></b-img> 
+                  </div>
+                </b-col>
+                <b-col v-if="[(rowNum-1)*4+2]<pictureList.length">
+                  <div class="withMargin">
+                    <b-img :src="temp_url[(rowNum-1)*4+2]" alt="Image Missing?"></b-img> 
+                  </div>
+                </b-col>
+                <b-col v-if="[(rowNum-1)*4+3]<pictureList.length">
+                  <div class="withMargin">
+                    <b-img :src="temp_url[(rowNum-1)*4+3]" alt="Image Missing?"></b-img> 
                   </div>
                 </b-col>
               </b-row>
-            </b-col>
-          </b-row>
-          <b-row>
-            <b-col>
-              <div class="withMargin">          
-                <b-form-tags v-model="selectedTags" no-outer-focus>
-                  <template v-slot="{ tags, tagVariant, removeTag }">                  
-                    <div class="d-inline-block">
-                      <b-form-tag
-                        v-for="tag in tags"
-                        @remove="removeTag(tag)"
-                        :key="tag"
-                        :title="tag"
-                        :variant="tagVariant"
-                      >{{ tag }}</b-form-tag>
-                    </div>
-                  </template>
-                </b-form-tags>
-              </div>
             </b-col>
           </b-row>
         </b-col>
@@ -105,16 +101,14 @@ export default {
   name: 'MainPage',
   data () {
     return {
-      pictureUrl: "",
-      selectedTags: [],
       searchTags: [],
       tagList: [],
       tagListForModal: [],
       tagGroups: [],
-      pictureNumber: 0,
-      selectedPictureId: "",
       pictureList: [],
-      selectedGroup: ""
+      selectedGroup: "",
+      temp_url: [],
+      temp_single_url: ""
     }
   },
   watch: {
@@ -126,11 +120,6 @@ export default {
     showModal: function(group) {
       this.buildGroupModal(group)
       this.$refs['tag-modal'].show()
-    },
-
-    showPictureModal: function(group) {
-      this.buildGroupModal(group)
-      this.$refs['picture-modal'].show()
     },
 
     buildGroupModal: function(group) {
@@ -147,20 +136,12 @@ export default {
       this.tagListForModal.length = 0
     },
 
-    noPicturesDisable: function() {
-      if (this.pictureList.length === 0) {
-        return true
-      }
-      return false
-    },
-
     getTagList: function() {
       axios.get('/api/getTagList').then(response => {
         console.log('getTagList response: ', response.data.msg)
         let tagListFromDB = response.data.tagList
         this.tagGroups = response.data.tagGroups
         this.tagList.length = 0
-        this.selectedTags.length = 0
         this.tagListForModal.length = 0
         for (let i in tagListFromDB) {
           this.tagList.push({text: tagListFromDB[i]['tagName'], value: tagListFromDB[i]['tagName'], group: tagListFromDB[i]['tagGroup']})
@@ -175,22 +156,8 @@ export default {
       })
     },
 
-    getPictureTags: function() {
-      let options = {
-        selectedPictureId: this.selectedPictureId
-      }
-      axios.post('/api/getPictureTags',options).then(response => {
-        console.log('getPictureTags response: ', response.data.msg)
-        this.selectedTags = response.data.pictureTags
-      })
-    },
-
     getPictureList: function() {
-      this.pictureNumber = 0
       this.pictureList.length = 0
-      this.selectedPictureId = ""
-      this.pictureUrl = ""
-      this.selectedTags.length = 0
       this.selectedFolder = ""
       let options = {
         searchTagList: this.searchTags
@@ -198,26 +165,24 @@ export default {
       axios.post('/api/getPictureList', options).then(response => {
         this.pictureList = response.data.pictureList
         console.log('getPictureList response: ', response.data.msg)
+        this.temp_url.length=0
+        for (let index in this.pictureList) {
+          this.getImageUrl(index)
+        }
       })
     },
 
     getImageUrl: function(pictureNumber) {
-      if (pictureNumber >= this.pictureList.length) {
-        return ""
-      } else {
-        let options = {
-          selectedPictureId: this.pictureList[pictureNumber]
-        }
-        axios.post('/api/getPicture', options).then(response => {
-          console.log('getPicture response: ', response.data.msg)
-          if (Object.keys(response.data).includes('picture')) {
-            // You can use following line if you do base64.b64encode on server side
-            return 'data:;base64,' + response.data.picture
-          } else {
-            return ""
-          }
-        })
+      let options = {
+        selectedPictureId: this.pictureList[pictureNumber]
       }
+      axios.post('/api/getPicture', options).then(response => {
+        console.log('getPicture response: ', response.data.msg)
+        if (Object.keys(response.data).includes('picture')) {
+          // You can use following line if you do base64.b64encode on server side
+          this.temp_url.push('data:;base64,' + response.data.picture)
+        }
+      })
     },
     // getPicture: function() {
     //   this.selectedPictureId = this.pictureList[this.pictureNumber]

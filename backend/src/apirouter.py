@@ -104,7 +104,7 @@ def getFolderList():
 @apirouter.route('/getPicture',methods=['POST'])
 def getPicture():
   imageExtensionAccepted = ['jpeg']
-  print("Begin getPicturesFromFolder")
+  print("Begin getPicture")
   params = request.get_json(force=True)
   picture = mongo_interface.getPictureById(params['selectedPictureId'])
   print(picture)

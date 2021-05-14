@@ -1,6 +1,6 @@
 <template>
-  <b-container>
-    <b-container>
+  <b-container fluid>
+    <b-container fluid>
       <b-row>
         <b-col cols="8">
           <b-row>
