@@ -12,13 +12,13 @@ class MongoInterface:
     def __init__(self):
         self.client = MongoClient('mongodb://localhost:27017/')
         self.db = self.client['picturedb']
-        if not 'tags' in self.db.collection_names():
+        if not 'tags' in self.db.list_collection_names():
             self.db.create_collection('tags')
         self.tagsTable = self.db['tags']
-        if not 'folders' in self.db.collection_names():
+        if not 'folders' in self.db.list_collection_names():
             self.db.create_collection('folders')
         self.foldersTable = self.db['folders']
-        if not 'pictures' in self.db.collection_names():
+        if not 'pictures' in self.db.list_collection_names():
             self.db.create_collection('pictures')
         self.picturesTable = self.db['pictures']
 
@@ -64,6 +64,11 @@ class MongoInterface:
       if folder==None:
         newEntry = {'folderName': newFolderName}
         self.foldersTable.insert_one(newEntry)
+
+    def deleteFolder(self, folderName, deletePictures=True):
+      self.foldersTable.delete_one({'folderName': folderName})
+      if deletePictures:
+        self.picturesTable.delete_many({"folder":folderName})
 
     def getFolderList(self):
       folderList = []

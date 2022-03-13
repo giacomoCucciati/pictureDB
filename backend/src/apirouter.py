@@ -1,12 +1,7 @@
 from flask import Blueprint, jsonify
-from flask_socketio import emit, join_room, leave_room
 from flask import request
-from flask import send_from_directory, send_file
-from . import socketio
 from .mongoInterface import MongoInterface
-from os import walk
-from os.path import join
-import imghdr
+import src.appUtils as appUtils
 
 
 apirouter = Blueprint("router", __name__)
@@ -61,35 +56,28 @@ def getPictureTags():
   print("End getPictureTags")
   return jsonify({'msg':'ciao', 'pictureTags':pictureTags})
 
-@apirouter.route('/importFolder',methods=['POST'])
+@apirouter.route('/editFolder',methods=['POST'])
 def importFolder():
   print("Begin importFolder")
   params = request.get_json(force=True)
   print(params['directive'])
-  mongo_interface.insertNewFolder(params['newFolder'])
-  # Now save all folder images in DB
-  imageExtensionAccepted = ['jpeg']
-  params = request.get_json(force=True)
-  filesInFolder = []
-  imagesInFolder = []
-  
-  for (dirpath, dirnames, filenames) in walk(params['newFolder']):
-    #filesInFolder.extend([join(dirpath,f) for f in filenames])
-    for filename in filenames:
-      filesInFolder.append({'dir':dirpath, 'filename': filename})
-    break # we stop the list at the first level of the directory (we don't look in subfolders)
-  
-  for myfile in filesInFolder:
-    if imghdr.what(join(myfile['dir'],myfile['filename'])) in imageExtensionAccepted:
-      imagesInFolder.append(myfile)
 
-  for image in imagesInFolder:
-    if params['directive'] == 'new-folder':
+  if params['directive'] == 'new-folder':
+    mongo_interface.insertNewFolder(params['newFolder'])
+    imagesInFolder = appUtils.getPicturesByFolder(params['newFolder'])
+    for image in imagesInFolder:
       mongo_interface.savePicture(image['dir'], image['filename'], [])
-    if params['directive'] == 'clear-tags':
+
+  if params['directive'] == 'clear-tags':
+    for image in imagesInFolder:
       mongo_interface.savePicture(image['dir'], image['filename'], [])
-    if params['directive'] == 'keep-tags':
+  
+  if params['directive'] == 'add-pictures':
+    for image in imagesInFolder:
       mongo_interface.savePicture(image['dir'], image['filename'], [], overwrite=False)
+
+  if params['directive'] == 'delete-folder':
+    mongo_interface.deleteFolder(params['newFolder'], deletePictures=True)
 
   print("End importFolder")
   return jsonify({'msg':'ciao'})

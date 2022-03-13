@@ -93,6 +93,7 @@
                   <b-form-input v-model="selectedFolder" placeholder="Enter folder"></b-form-input>
                 </b-form-group>
                 <b-button @click="importFolder()" variant="outline-primary">Import Folder</b-button>
+                <b-button @click="editFolder()" variant="outline-primary">Edit Folder</b-button>
               </div>
             </b-col>
           </b-row>
@@ -210,12 +211,19 @@
       </b-modal>
     </div>
     <div>
-      <b-modal ref="import-folder-modal" hide-footer title="Import folder">
+      <b-modal ref="import-folder-modal" @ok="okImportModal()" title="Import folder">
         <div class="d-block text-center">
-          <h3>La cartella e' gia' presente nel DB...</h3>
+          <h4>{{selectedFolder}}</h4>
+          <h3>La cartella e' gia' presente nel DB. Vuoi Applicare delle modifiche? (Rimuovi tags/aggiungi foto/cancella cartella)</h3>
         </div>
-        <b-button class="mt-3" variant="outline-danger" block @click="launchImportFolder('clear-tags')">Rimuovi tags delle foto gia' presenti</b-button>
-        <b-button class="mt-3" variant="outline-warning" block @click="launchImportFolder('keep-tags')">Aggiungi solo nuove foto</b-button>
+      </b-modal>
+      <b-modal ref="edit-folder-modal" hide-footer title="Edit folder">
+        <div class="d-block text-center">
+          <h4>{{selectedFolder}}</h4>
+        </div>
+        <b-button class="mt-3" variant="outline-danger" block @click="launchEditFolder('clear-tags')">Rimuovi tags delle foto gia' presenti</b-button>
+        <b-button class="mt-3" variant="outline-warning" block @click="launchEditFolder('add-pictures')">Aggiungi solo nuove foto</b-button>
+        <b-button class="mt-3" variant="outline-warning" block @click="launchEditFolder('delete-folder')">Rimuovi folder e sue foto</b-button>
       </b-modal>
     </div>
   </b-container>
@@ -240,8 +248,7 @@ export default {
       pictureNumber: 0,
       selectedPictureId: "",
       pictureList: [],
-      selectedGroup: ""
-    }
+      selectedGroup: ""    }
   },
   watch: {
     searchTags: function () {
@@ -261,7 +268,7 @@ export default {
 
     buildGroupModal: function(group) {
       this.selectedGroup = group
-      this.tagListForModal.length = 0
+      this.tagListForModal.splice(0)
       for (let i in this.tagList) {
         if (this.tagList[i]['group'] === group) {
           this.tagListForModal.push(this.tagList[i])
@@ -271,7 +278,7 @@ export default {
 
     handleOk: function() {
       this.insertTagName = ""
-      this.tagListForModal.length = 0
+      this.tagListForModal.splice(0)
     },
 
     noPicturesDisable: function() {
@@ -324,10 +331,10 @@ export default {
         console.log('getTagList response: ', response.data.msg)
         let tagListFromDB = response.data.tagList
         this.tagGroups = response.data.tagGroups
-        this.tagList.length = 0
-        this.selectedTags.length = 0
+        this.tagList.splice(0)
+        this.selectedTags.splice(0)
         this.insertTagName = ""
-        this.tagListForModal.length = 0
+        this.tagListForModal.splice(0)
         for (let i in tagListFromDB) {
           this.tagList.push({text: tagListFromDB[i]['tagName'], value: tagListFromDB[i]['tagName'], group: tagListFromDB[i]['tagGroup']})
         }
@@ -352,32 +359,43 @@ export default {
     },
 
     importFolder: function() {
+      if (this.selectedFolder === "") {
+        return
+      }
       for (let i in this.folderList) {
         if (this.folderList[i]['value'] === this.selectedFolder) {
           this.$refs['import-folder-modal'].show()
           return
         }
       }
-      this.launchImportFolder('new-folder')
+      this.launchEditFolder('new-folder')
     },
 
-    launchImportFolder: function(condition) {
-      this.$refs['import-folder-modal'].hide()
+    editFolder: function() {
+      this.$refs['edit-folder-modal'].show()
+    },
+
+    okImportModal: function() {
+      this.$refs['edit-folder-modal'].show()
+    },
+
+    launchEditFolder: function(condition) {
+      this.$refs['edit-folder-modal'].hide()
       let options = {
         newFolder: this.selectedFolder,
         directive: condition
       }
-      axios.post('/api/importFolder',options).then(response => {
+      axios.post('/api/editFolder',options).then(response => {
         console.log('importFolder response: ', response.data.msg)
         this.getFolderList()
-        this.searchTags.length = 0
+        this.searchTags.splice(0)
         this.getPictureList()
       })
     },
 
     getFolderList: function() {
       axios.get('/api/getFolderList').then(response => {
-        this.folderList.length = 0
+        this.folderList.splice(0)
         for (let i in response.data.folderList) {
           this.folderList.push({text:response.data.folderList[i], value:response.data.folderList[i]})
         }
@@ -406,10 +424,10 @@ export default {
 
     getPictureList: function() {
       this.pictureNumber = 0
-      this.pictureList.length = 0
+      this.pictureList.splice(0)
       this.selectedPictureId = ""
       this.pictureUrl = ""
-      this.selectedTags.length = 0
+      this.selectedTags.splice(0)
       this.selectedFolder = ""
       // if (this.searchTags.length > 0) {
       let options = {
@@ -448,11 +466,11 @@ export default {
         this.getTagList()
         this.getFolderList()
         this.pictureNumber = 0
-        this.pictureList.length = 0
+        this.pictureList.splice(0)
         this.selectedPictureId = ""
         this.pictureUrl = ""
-        this.selectedTags.length = 0
-        this.folderList.length = 0
+        this.selectedTags.splice(0)
+        this.folderList.splice(0)
         this.selectedFolder = ""
       })
     }
