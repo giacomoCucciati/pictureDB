@@ -22,6 +22,27 @@ class MongoInterface:
             self.db.create_collection('pictures')
         self.picturesTable = self.db['pictures']
 
+###################################################
+#                   Tag Section                   #
+###################################################
+
+    def createTag(self, tagGroup):
+      tag = self.tagsTable.find_one({'tagName': 'New Tag'})
+      if tag==None:
+        newEntry = {'tagName': 'New Tag', 'tagGroup': tagGroup}
+        self.tagsTable.insert_one(newEntry)
+    
+    def removeTag(self, tagName):
+      print(self.picturesTable.find({'tags':tagName}))
+      self.tagsTable.delete_many({'tagName': tagName})  
+
+    def editTag(self, tagName, newName):
+      tag = self.tagsTable.find_one({'tagName': newName})
+      if tag==None:
+        print(self.picturesTable.find({'tags':tagName}))
+        newvalues = { "$set": { "tagName": newName } }
+        self.tagsTable.update_one({'tagName': tagName}, newvalues)
+
     def savePicture(self, folderName, pictureName, selectedTags, overwrite=True):
       picture = self.picturesTable.find_one({'folder': folderName, 'filename': pictureName})
       print('savePicture',picture)
@@ -49,15 +70,6 @@ class MongoInterface:
       for tag in self.tagsTable.find():
         tagList.append({'tagName': tag['tagName'], 'tagGroup':tag['tagGroup']})
       return tagList
-
-    def insertNewTag(self, tagName, tagGroup):
-      tag = self.tagsTable.find_one({'tagName': tagName, 'tagGroup': tagGroup})
-      if tag==None:
-        newEntry = {'tagName': tagName, 'tagGroup': tagGroup}
-        self.tagsTable.insert_one(newEntry)
-    
-    def removeTag(self, tagName, tagGroup):
-      self.tagsTable.delete_many({'tagName': tagName, 'tagGroup': tagGroup})  
 
     def insertNewFolder(self, newFolderName):
       folder = self.foldersTable.find_one({'folderName': newFolderName})

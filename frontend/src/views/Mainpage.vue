@@ -2,61 +2,18 @@
   <b-container fluid>
     <b-container fluid>
       <b-row>
-        <b-col cols="8">
-          <b-row>
-            <b-col cols="1">
-              <div class="withMargin">
-                <b-button @click="getPrevPicture()" :disabled="noPicturesDisable()" variant="outline-primary">-</b-button>
-              </div>
-            </b-col>
-            <b-col cols="10">
-              <div class="withMargin">
-                <b-img :src="pictureUrl" fluid alt="Responsive picture" id="mypicture"></b-img>
-              </div>
-            </b-col>
-            <b-col cols="1">
-              <div class="withMargin">
-                <b-button @click="getNextPicture()" :disabled="noPicturesDisable()" variant="outline-primary">+</b-button>
-              </div>
-            </b-col>
-          </b-row>
-          <b-row>
-            <b-col>
-              <div class="withMargin">
-                <b-button-group>
-                  <b-button v-for="group in tagGroups" :key="group" @click="showPictureModal(group)">{{group}}</b-button>
-                </b-button-group>
-              </div>
-              <div class="withMargin">          
-                <b-form-tags v-model="selectedTags" no-outer-focus>
-                  <template v-slot="{ tags, tagVariant, removeTag }">                  
-                    <div class="d-inline-block">
-                      <b-form-tag
-                        v-for="tag in tags"
-                        @remove="removeTag(tag)"
-                        :key="tag"
-                        :title="tag"
-                        :variant="tagVariant"
-                      >{{ tag }}</b-form-tag>
-                    </div>
-                  </template>
-                </b-form-tags>
-              </div>
-            </b-col>
-          </b-row>
-          <b-row>
-            <b-col>
-              <div class="withMargin">
-                <b-button @click="savePicture()" variant="outline-primary">Save Picture and Tags</b-button>
-                <b-button @click="removePicture()" variant="outline-primary">Remove Picture from DB</b-button>
-              </div>
-            </b-col>
-          </b-row>
-        </b-col>
         <b-col cols="4">
           <b-row>
-            <b-col>
-              <div class="withMargin">
+            <b-col cols="6">
+              <TreeExample 
+                :treeDisplayData="tagList"
+                v-on:delete-node="deleteTag"
+                v-on:edit-node="editTag"
+                v-on:create-node="createTag"
+                :checkedTags='searchTags'
+                :tagTreeTitle='"Tag Editor"'
+              />
+              <!-- <div class="withMargin">
                 <b-button-group>
                   <b-button v-for="group in tagGroups" :key="group" @click="showModal(group)" variant="success">{{group}}</b-button>
                 </b-button-group>
@@ -76,6 +33,9 @@
                   </template>
                 </b-form-tags>
               </div>
+            </b-col>
+            <b-col cols="6"> -->
+              
             </b-col>
           </b-row>
           <b-row>
@@ -122,7 +82,7 @@
             <b-col>
               <div class="withMargin">
                 <!-- Using value -->
-                <b-button v-b-modal="'my-modal'">Delete DB</b-button>
+                <b-button v-b-modal="'my-modal'" >Delete DB</b-button>
 
                 <!-- The modal -->
                 <b-modal id="my-modal" @ok="deleteDB()">Do you really want to delete the full DB?</b-modal>
@@ -130,9 +90,60 @@
             </b-col>
           </b-row>
         </b-col>
+        <b-col cols="8">
+          <b-row>
+            <b-col cols="1">
+              <div class="withMargin">
+                <b-button @click="getPrevPicture()" :disabled="noPicturesDisable()" variant="outline-primary">-</b-button>
+              </div>
+            </b-col>
+            <b-col cols="10">
+              <div class="withMargin">
+                <b-img :src="pictureUrl" fluid alt="Responsive picture" id="mypicture"></b-img>
+              </div>
+            </b-col>
+            <b-col cols="1">
+              <div class="withMargin">
+                <b-button @click="getNextPicture()" :disabled="noPicturesDisable()" variant="outline-primary">+</b-button>
+              </div>
+            </b-col>
+          </b-row>
+          <!-- <b-row>
+            <b-col>
+              <div class="withMargin">
+                <b-button-group>
+                  <b-button v-for="group in tagGroups" :key="group" @click="showPictureModal(group)">{{group}}</b-button>
+                </b-button-group>
+              </div>
+              <div class="withMargin">          
+                <b-form-tags v-model="selectedTags" no-outer-focus>
+                  <template v-slot="{ tags, tagVariant, removeTag }">                  
+                    <div class="d-inline-block">
+                      <b-form-tag
+                        v-for="tag in tags"
+                        @remove="removeTag(tag)"
+                        :key="tag"
+                        :title="tag"
+                        :variant="tagVariant"
+                      >{{ tag }}</b-form-tag>
+                    </div>
+                  </template>
+                </b-form-tags>
+              </div>
+            </b-col>
+          </b-row> -->
+          <b-row>
+            <b-col>
+              <div class="withMargin">
+                <b-button v-b-modal="'picture-modal'" variant="outline-primary">Add Tags to Picture</b-button>
+                <b-button @click="removePicture()" variant="outline-primary">Remove Picture from DB</b-button>
+              </div>
+            </b-col>
+          </b-row>
+        </b-col>
       </b-row>
     </b-container>
-    <div>
+    <!-- <div>
       <b-modal 
         ref="tag-modal" 
         ok-only 
@@ -164,7 +175,6 @@
           </b-row>
           <b-row>
             <b-col>
-              <!-- some space -->
               <div class="withBigMargin"/>
               <hr>
               <div class="withBigMargin"/>
@@ -185,25 +195,18 @@
           </b-row>
         </b-container>
       </b-modal>
-    </div>
+    </div> -->
     <div>
-      <b-modal ref="picture-modal" ok-only>
+      <b-modal id="picture-modal" @ok="savePicture()">
         <b-container>
           <b-row>
             <b-col>
               <div class="withMargin">
-                <b-form-group
-                  v-slot="{ ariaDescribedby }"
-                >
-                  <b-form-checkbox-group
-                    v-model="selectedTags"
-                    :options="tagListForModal"
-                    :aria-describedby="ariaDescribedby"
-                    name="buttons-1"
-                    buttons
-                    button-variant="outline-primary"
-                  ></b-form-checkbox-group>
-                </b-form-group>
+                <TreeExample 
+                  :treeDisplayData="tagList"
+                  :checkedTags='selectedTags'
+                  :tagTreeTitle='"Tag Editor"'
+                />
               </div>
             </b-col>
           </b-row>
@@ -230,10 +233,13 @@
 </template>
 
 <script>
+import '@riophae/vue-treeselect/dist/vue-treeselect.css'
 import axios from 'axios'
+import TreeExample from "../components/TreeTag";
 
 export default {
   name: 'MainPage',
+  components: { TreeExample },
   data () {
     return {
       pictureUrl: "",
@@ -248,38 +254,131 @@ export default {
       pictureNumber: 0,
       selectedPictureId: "",
       pictureList: [],
-      selectedGroup: ""    }
+      selectedGroup: "",
+    }
   },
   watch: {
     searchTags: function () {
+      console.log('searchTags', this.searchTags)
       this.getPictureList()
     }
   },
   methods: {
-    showModal: function(group) {
-      this.buildGroupModal(group)
-      this.$refs['tag-modal'].show()
-    },
 
-    showPictureModal: function(group) {
-      this.buildGroupModal(group)
-      this.$refs['picture-modal'].show()
-    },
+    // ###################################################
+    // #                   Tag Section                   #
+    // ###################################################
 
-    buildGroupModal: function(group) {
-      this.selectedGroup = group
-      this.tagListForModal.splice(0)
-      for (let i in this.tagList) {
-        if (this.tagList[i]['group'] === group) {
-          this.tagListForModal.push(this.tagList[i])
+    deleteTag: function(nodeId) {
+      console.log("deleteTag ", nodeId)
+      let found = false
+      for (let mainTagIndex in this.tagList) {
+        for (let secondTagIndex in this.tagList[mainTagIndex].nodes) {
+          const innerTag = this.tagList[mainTagIndex].nodes[secondTagIndex]
+          if (innerTag.id == nodeId) {
+            // this.tagList[mainTagIndex].nodes.splice(secondTagIndex,1)
+            found = true
+          }
+        }
+      }
+      if(!found) {
+        console.log('Child node not found. Are you trying to delete a parent node?')
+      } else {
+        alert("The tag will be deleted also from all the pictures using it")
+        let options = {
+          action: 'deleteTag',
+          tagId: nodeId
+        }
+        axios.post('/api/changeTag', options).then(response => {
+          console.log('deleteTag response: ', response.data.msg)
+          this.getTagList()
+        })
+      }
+    },
+    editTag: function(nodeId, newName) {
+      console.log("editTag ", nodeId, newName)
+      let found = false
+      for (let mainTagIndex in this.tagList) {
+        for (let secondTagIndex in this.tagList[mainTagIndex].nodes) {
+          const innerTag = this.tagList[mainTagIndex].nodes[secondTagIndex]
+          if (innerTag.id == nodeId) {
+            // innerTag.text = newName            
+            // innerTag.id = newName
+            found = true
+          }
+        }
+      }
+      if(!found) {
+        console.log('Child node not found. Are you trying to edit a parent node?')
+      } else {
+        alert("The tag will be changed in all the pictures using it")
+        let options = {
+          action: 'editTag',
+          tagId: nodeId,
+          newName: newName
+        }
+        axios.post('/api/changeTag', options).then(response => {
+          console.log('editTag response: ', response.data.msg)
+          this.getTagList()
+        })
+      }
+    },
+    createTag: function(parentNodeId) {
+      console.log("createTag ", parentNodeId)
+      
+      for (let mainTagIndex in this.tagList) {
+        const innerTag = this.tagList[mainTagIndex]
+        if (innerTag.id == parentNodeId) {
+          if (innerTag.nodes === undefined) {
+            // the node doesn't have childs
+            // I use $set to ensure that VueJs detect the change
+            console.log('Disabled parent node creation')
+            // this.$set(node, "nodes", [newNode]);
+          } else {
+            let options = {
+              action: 'createTag',
+              parentTagId: parentNodeId,
+            }
+            axios.post('/api/changeTag', options).then(response => {
+              console.log('createTag response: ', response.data.msg)
+              this.getTagList()
+            })
+          }
         }
       }
     },
+    // open(target, cm) {
+    //         console.log(target, cm);
+    //         // other actions...
+    //     },
 
-    handleOk: function() {
-      this.insertTagName = ""
-      this.tagListForModal.splice(0)
-    },
+    //     close(target, cm) {
+    //         console.log(target, cm);
+    //         // other actions...
+    //     },
+    // showModal: function(group) {
+    //   this.buildGroupModal(group)
+    //   this.$refs['tag-modal'].show()
+    // },
+
+    // showPictureModal: function(group) {
+    //   this.buildGroupModal(group)
+    //   this.$refs['picture-modal'].show()
+    // },
+
+    // buildGroupModal: function(group) {
+    //   this.selectedGroup = group
+    //   this.tagListForModal.splice(0)
+    //   for (let i in this.tagList) {
+    //     if (this.tagList[i]['group'] === group) {
+    //       this.tagListForModal.push(this.tagList[i])
+    //     }
+    //   }
+    // },
+
+    // ###################################################
+    // #                 Picture Section                 #
+    // ###################################################
 
     noPicturesDisable: function() {
       if (this.pictureList.length === 0) {
@@ -294,9 +393,10 @@ export default {
           selectedTags:     this.selectedTags,
           selectedPictureId:  this.selectedPictureId,
         }
-        axios.post('/api/savePicture', options).then(response => {
-          console.log('savePicture response: ', response.data.msg)
-        })
+        console.log(options)
+        // axios.post('/api/savePicture', options).then(response => {
+        //   console.log('savePicture response: ', response.data.msg)
+        // })
       }
     },
 
@@ -311,21 +411,6 @@ export default {
       }
     },
 
-    changeTagList: function(action, tagGroup) {
-      this.insertTagName = this.insertTagName.trim()
-      if (this.insertTagName !== "") {
-        let options = {
-          tagName: this.insertTagName,
-          tagGroup: tagGroup,
-          action: action
-        }
-        axios.post('/api/changeTagList', options).then(response => {
-          console.log('changeTagList response: ', response.data.msg)
-          this.getTagList()
-        })
-      }
-    },
-
     getTagList: function() {
       axios.get('/api/getTagList').then(response => {
         console.log('getTagList response: ', response.data.msg)
@@ -334,15 +419,28 @@ export default {
         this.tagList.splice(0)
         this.selectedTags.splice(0)
         this.insertTagName = ""
-        this.tagListForModal.splice(0)
-        for (let i in tagListFromDB) {
-          this.tagList.push({text: tagListFromDB[i]['tagName'], value: tagListFromDB[i]['tagName'], group: tagListFromDB[i]['tagGroup']})
+        for (let index in this.tagGroups) {
+          this.tagList.push({
+            text: this.tagGroups[index],
+            id: this.tagGroups[index],
+            checkable: true,
+            nodes: []
+          })
+          console.log(this.tagList)
         }
-        if (this.selectedGroup !== "") {
-          for (let i in this.tagList) {
-            if (this.tagList[i]['group'] === this.selectedGroup) {
-              this.tagListForModal.push(this.tagList[i])
-            }
+        for (let i in tagListFromDB) {
+          console.log(tagListFromDB[i])
+          let groupIndex = undefined
+          for (var index in this.tagList) {
+            if (this.tagList[index].id == tagListFromDB[i]['tagGroup']) groupIndex = index
+          }
+          if (groupIndex == undefined) {
+            console.error("Group tag not found: ", tagListFromDB[i]['tagGroup'])
+          } else {
+            this.tagList[groupIndex].nodes.push({
+                id: tagListFromDB[i]['tagName'],
+                text: tagListFromDB[i]['tagName'],
+              })
           }
         }
       })
