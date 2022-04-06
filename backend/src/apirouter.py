@@ -134,7 +134,7 @@ def getPictureTags():
 #   return jsonify({'msg':'ciao'})
 
   
-# @apirouter.route('/deleteDb',methods=['GET'])
-# def deleteDb():
-#   mongo_interface.deleteDb()
-#   return jsonify({'msg':'ciao'})
+@apirouter.route('/deleteDb',methods=['GET'])
+def deleteDb():
+  mongo_interface.deleteDb()
+  return jsonify({'msg':'ciao'})

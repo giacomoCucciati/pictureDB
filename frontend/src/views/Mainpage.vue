@@ -10,7 +10,7 @@
                 v-on:delete-node="deleteTag"
                 v-on:edit-node="editTag"
                 v-on:create-node="createTag"
-                :checkedTags='searchTags'
+                v-on:checked-node="newSearchCheck"
                 :tagTreeTitle='"Tag Editor"'
               />
               <!-- <div class="withMargin">
@@ -257,12 +257,12 @@ export default {
       selectedGroup: "",
     }
   },
-  watch: {
-    searchTags: function () {
-      console.log('searchTags', this.searchTags)
-      this.getPictureList()
-    }
-  },
+  // watch: {
+  //   searchTags: function () {
+  //     console.log('searchTags', this.searchTags)
+  //     this.getPictureList()
+  //   }
+  // },
   methods: {
 
     // ###################################################
@@ -347,6 +347,19 @@ export default {
         }
       }
     },
+
+    newSearchCheck: function() {
+      for (let mainTagIndex in this.tagList) {
+        for (let secondTagIndex in this.tagList[mainTagIndex].nodes) {
+          const innerTag = this.tagList[mainTagIndex].nodes[secondTagIndex]
+          console.log(innerTag)
+          if (innerTag.state.checked) {
+            this.searchTags.push(innerTag.id)
+          }
+        }
+      }
+      this.getPictureList()
+    },
     // open(target, cm) {
     //         console.log(target, cm);
     //         // other actions...
@@ -424,6 +437,7 @@ export default {
             text: this.tagGroups[index],
             id: this.tagGroups[index],
             checkable: true,
+            state: {checked: false, expanded: false, selected: false},
             nodes: []
           })
           console.log(this.tagList)
@@ -440,6 +454,7 @@ export default {
             this.tagList[groupIndex].nodes.push({
                 id: tagListFromDB[i]['tagName'],
                 text: tagListFromDB[i]['tagName'],
+                state: {checked: false, expanded: false, selected: false}
               })
           }
         }
@@ -531,6 +546,7 @@ export default {
       let options = {
         searchTagList: this.searchTags
       }
+      console.log(options)
       axios.post('/api/getPictureList', options).then(response => {
         this.pictureList = response.data.pictureList
         console.log('getPictureList response: ', response.data.msg)

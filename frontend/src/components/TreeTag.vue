@@ -138,7 +138,7 @@ export default {
     myCheckedFunction: function (nodeId, state) {
       console.log(this.treeDisplayData)
       console.log(`is ${nodeId} checked ? ${state}`); 
-      //sendevents
+      this.$emit('checked-node')
     },
     // mySelectedFunction: function (nodeId, state) {
     //   console.log(`is ${nodeId} selected ? ${state}`);
