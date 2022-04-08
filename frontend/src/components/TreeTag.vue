@@ -136,8 +136,12 @@ export default {
   // },
   methods: {
     myCheckedFunction: function (nodeId, state) {
-      console.log(this.treeDisplayData)
+      console.log('this.treeDisplayData', this.treeDisplayData)
       console.log(`is ${nodeId} checked ? ${state}`); 
+      // The following two lines seem to be necessary to update checked
+      // state of children in case parent node changes state
+      const checkednode = this.$refs["my-tree"].findNode(nodeId);
+      this.$set(checkednode, state.checked, state);
       this.$emit('checked-node')
     },
     // mySelectedFunction: function (nodeId, state) {

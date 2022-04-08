@@ -76,14 +76,14 @@ def getPictureTags():
   print("End getPictureTags")
   return jsonify({'msg':'ciao', 'pictureTags':pictureTags})
 
-# @apirouter.route('/savePicture',methods=['POST'])
-# def savePicture():
-#   print("Begin savePicture")
-#   params = request.get_json(force=True)
-#   print(params['selectedPictureId'], params['selectedTags'])
-#   mongo_interface.updatePictureTags(params['selectedPictureId'], params['selectedTags'])
-#   print("End savePicture")
-#   return jsonify({'msg':'ciao'})
+@apirouter.route('/savePicture',methods=['POST'])
+def savePicture():
+  print("Begin savePicture")
+  params = request.get_json(force=True)
+  print(params['selectedPictureId'], params['selectedTags'])
+  mongo_interface.updatePictureTags(params['selectedPictureId'], params['selectedTags'])
+  print("End savePicture")
+  return jsonify({'msg':'ciao'})
 
 # @apirouter.route('/removePicture',methods=['POST'])
 # def removePicture():
@@ -107,31 +107,31 @@ def getPictureTags():
 
 
 
-# @apirouter.route('/editFolder',methods=['POST'])
-# def importFolder():
-#   print("Begin importFolder")
-#   params = request.get_json(force=True)
-#   print(params['directive'])
+@apirouter.route('/editFolder',methods=['POST'])
+def importFolder():
+  print("Begin importFolder")
+  params = request.get_json(force=True)
+  print(params['directive'])
 
-#   if params['directive'] == 'new-folder':
-#     mongo_interface.insertNewFolder(params['newFolder'])
-#     imagesInFolder = appUtils.getPicturesByFolder(params['newFolder'])
-#     for image in imagesInFolder:
-#       mongo_interface.savePicture(image['dir'], image['filename'], [])
+  if params['directive'] == 'new-folder':
+    mongo_interface.insertNewFolder(params['newFolder'])
+    imagesInFolder = appUtils.getPicturesByFolder(params['newFolder'])
+    for image in imagesInFolder:
+      mongo_interface.savePicture(image['dir'], image['filename'], [])
 
-#   if params['directive'] == 'clear-tags':
-#     for image in imagesInFolder:
-#       mongo_interface.savePicture(image['dir'], image['filename'], [])
+  if params['directive'] == 'clear-tags':
+    for image in imagesInFolder:
+      mongo_interface.savePicture(image['dir'], image['filename'], [])
   
-#   if params['directive'] == 'add-pictures':
-#     for image in imagesInFolder:
-#       mongo_interface.savePicture(image['dir'], image['filename'], [], overwrite=False)
+  if params['directive'] == 'add-pictures':
+    for image in imagesInFolder:
+      mongo_interface.savePicture(image['dir'], image['filename'], [], overwrite=False)
 
-#   if params['directive'] == 'delete-folder':
-#     mongo_interface.deleteFolder(params['newFolder'], deletePictures=True)
+  if params['directive'] == 'delete-folder':
+    mongo_interface.deleteFolder(params['newFolder'], deletePictures=True)
 
-#   print("End importFolder")
-#   return jsonify({'msg':'ciao'})
+  print("End importFolder")
+  return jsonify({'msg':'ciao'})
 
   
 @apirouter.route('/deleteDb',methods=['GET'])

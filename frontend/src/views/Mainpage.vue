@@ -4,38 +4,15 @@
       <b-row>
         <b-col cols="4">
           <b-row>
-            <b-col cols="6">
+            <b-col>
               <TreeExample 
-                :treeDisplayData="tagList"
+                :treeDisplayData="editorTagList"
                 v-on:delete-node="deleteTag"
                 v-on:edit-node="editTag"
                 v-on:create-node="createTag"
                 v-on:checked-node="newSearchCheck"
                 :tagTreeTitle='"Tag Editor"'
-              />
-              <!-- <div class="withMargin">
-                <b-button-group>
-                  <b-button v-for="group in tagGroups" :key="group" @click="showModal(group)" variant="success">{{group}}</b-button>
-                </b-button-group>
-              </div>
-              <div class="withMargin">          
-                <b-form-tags v-model="searchTags" no-outer-focus>
-                  <template v-slot="{ tags, tagVariant, removeTag }">                  
-                    <div class="d-inline-block">
-                      <b-form-tag
-                        v-for="tag in tags"
-                        @remove="removeTag(tag)"
-                        :key="tag"
-                        :title="tag"
-                        :variant="tagVariant"
-                      >{{ tag }}</b-form-tag>
-                    </div>
-                  </template>
-                </b-form-tags>
-              </div>
-            </b-col>
-            <b-col cols="6"> -->
-              
+              />              
             </b-col>
           </b-row>
           <b-row>
@@ -203,9 +180,9 @@
             <b-col>
               <div class="withMargin">
                 <TreeExample 
-                  :treeDisplayData="tagList"
-                  :checkedTags='selectedTags'
-                  :tagTreeTitle='"Tag Editor"'
+                  :treeDisplayData="pictureTagList"
+                  v-on:checked-node="newPictureTagCheck"
+                  :tagTreeTitle='"Tag List"'
                 />
               </div>
             </b-col>
@@ -243,18 +220,16 @@ export default {
   data () {
     return {
       pictureUrl: "",
-      selectedTags: [],
-      searchTags: [],
-      insertTagName: "",
-      tagList: [],
-      tagListForModal: [],
+      editorTagList: [],      // tag list for tag editor
+      searchTags: [],         // tag list for search pictures
+      pictureTagList: [],     // tag list for picture-modal
+      selectedTags: [],       // list of tags to add to the picture
       tagGroups: [],
       selectedFolder: "",
       folderList: [],
       pictureNumber: 0,
       selectedPictureId: "",
       pictureList: [],
-      selectedGroup: "",
     }
   },
   // watch: {
@@ -272,9 +247,9 @@ export default {
     deleteTag: function(nodeId) {
       console.log("deleteTag ", nodeId)
       let found = false
-      for (let mainTagIndex in this.tagList) {
-        for (let secondTagIndex in this.tagList[mainTagIndex].nodes) {
-          const innerTag = this.tagList[mainTagIndex].nodes[secondTagIndex]
+      for (let mainTagIndex in this.editorTagList) {
+        for (let secondTagIndex in this.editorTagList[mainTagIndex].nodes) {
+          const innerTag = this.editorTagList[mainTagIndex].nodes[secondTagIndex]
           if (innerTag.id == nodeId) {
             // this.tagList[mainTagIndex].nodes.splice(secondTagIndex,1)
             found = true
@@ -298,9 +273,9 @@ export default {
     editTag: function(nodeId, newName) {
       console.log("editTag ", nodeId, newName)
       let found = false
-      for (let mainTagIndex in this.tagList) {
-        for (let secondTagIndex in this.tagList[mainTagIndex].nodes) {
-          const innerTag = this.tagList[mainTagIndex].nodes[secondTagIndex]
+      for (let mainTagIndex in this.editorTagList) {
+        for (let secondTagIndex in this.editorTagList[mainTagIndex].nodes) {
+          const innerTag = this.editorTagList[mainTagIndex].nodes[secondTagIndex]
           if (innerTag.id == nodeId) {
             // innerTag.text = newName            
             // innerTag.id = newName
@@ -326,8 +301,8 @@ export default {
     createTag: function(parentNodeId) {
       console.log("createTag ", parentNodeId)
       
-      for (let mainTagIndex in this.tagList) {
-        const innerTag = this.tagList[mainTagIndex]
+      for (let mainTagIndex in this.editorTagList) {
+        const innerTag = this.editorTagList[mainTagIndex]
         if (innerTag.id == parentNodeId) {
           if (innerTag.nodes === undefined) {
             // the node doesn't have childs
@@ -349,9 +324,10 @@ export default {
     },
 
     newSearchCheck: function() {
-      for (let mainTagIndex in this.tagList) {
-        for (let secondTagIndex in this.tagList[mainTagIndex].nodes) {
-          const innerTag = this.tagList[mainTagIndex].nodes[secondTagIndex]
+      this.searchTags.splice(0)
+      for (let mainTagIndex in this.editorTagList) {
+        for (let secondTagIndex in this.editorTagList[mainTagIndex].nodes) {
+          const innerTag = this.editorTagList[mainTagIndex].nodes[secondTagIndex]
           console.log(innerTag)
           if (innerTag.state.checked) {
             this.searchTags.push(innerTag.id)
@@ -360,6 +336,20 @@ export default {
       }
       this.getPictureList()
     },
+
+    newPictureTagCheck: function() {
+      this.selectedTags.splice(0)
+      for (let mainTagIndex in this.pictureTagList) {
+        for (let secondTagIndex in this.pictureTagList[mainTagIndex].nodes) {
+          const innerTag = this.pictureTagList[mainTagIndex].nodes[secondTagIndex]
+          if (innerTag.state.checked) {
+            this.selectedTags.push(innerTag.id)
+          }
+        }
+      }
+      console.log("newPictureTagCheck ", this.selectedTags)
+    },    
+    
     // open(target, cm) {
     //         console.log(target, cm);
     //         // other actions...
@@ -407,9 +397,9 @@ export default {
           selectedPictureId:  this.selectedPictureId,
         }
         console.log(options)
-        // axios.post('/api/savePicture', options).then(response => {
-        //   console.log('savePicture response: ', response.data.msg)
-        // })
+        axios.post('/api/savePicture', options).then(response => {
+          console.log('savePicture response: ', response.data.msg)
+        })
       }
     },
 
@@ -429,35 +419,36 @@ export default {
         console.log('getTagList response: ', response.data.msg)
         let tagListFromDB = response.data.tagList
         this.tagGroups = response.data.tagGroups
-        this.tagList.splice(0)
+        this.editorTagList.splice(0)
+        this.pictureTagList.splice(0)
         this.selectedTags.splice(0)
-        this.insertTagName = ""
         for (let index in this.tagGroups) {
-          this.tagList.push({
+          this.editorTagList.push({
             text: this.tagGroups[index],
             id: this.tagGroups[index],
             checkable: true,
             state: {checked: false, expanded: false, selected: false},
             nodes: []
           })
-          console.log(this.tagList)
+          console.log(this.editorTagList)
         }
         for (let i in tagListFromDB) {
           console.log(tagListFromDB[i])
           let groupIndex = undefined
-          for (var index in this.tagList) {
-            if (this.tagList[index].id == tagListFromDB[i]['tagGroup']) groupIndex = index
+          for (var index in this.editorTagList) {
+            if (this.editorTagList[index].id == tagListFromDB[i]['tagGroup']) groupIndex = index
           }
           if (groupIndex == undefined) {
             console.error("Group tag not found: ", tagListFromDB[i]['tagGroup'])
           } else {
-            this.tagList[groupIndex].nodes.push({
+            this.editorTagList[groupIndex].nodes.push({
                 id: tagListFromDB[i]['tagName'],
                 text: tagListFromDB[i]['tagName'],
                 state: {checked: false, expanded: false, selected: false}
               })
           }
         }
+        this.pictureTagList = this.deepCopyFunction(this.editorTagList)
       })
     },
 
@@ -587,6 +578,26 @@ export default {
         this.folderList.splice(0)
         this.selectedFolder = ""
       })
+    },
+
+    deepCopyFunction: function(inObject) {
+      let outObject, value, key
+
+      if (typeof inObject !== "object" || inObject === null) {
+        return inObject // Return the value if inObject is not an object
+      }
+
+      // Create an array or object to hold the values
+      outObject = Array.isArray(inObject) ? [] : {}
+
+      for (key in inObject) {
+        value = inObject[key]
+
+        // Recursively (deep) copy for nested objects, including arrays
+        outObject[key] = this.deepCopyFunction(value)
+      }
+
+      return outObject
     }
 
   },
