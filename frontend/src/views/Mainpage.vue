@@ -4,15 +4,23 @@
       <b-row>
         <b-col cols="4">
           <b-row>
-            <b-col>
+            <b-col cols="6">
               <TreeExample 
                 :treeDisplayData="editorTagList"
                 v-on:delete-node="deleteTag"
                 v-on:edit-node="editTag"
                 v-on:create-node="createTag"
                 v-on:checked-node="newSearchCheck"
-                :tagTreeTitle='"Tag Editor"'
+                :tagTreeTitle='"Filtro"'
               />              
+            </b-col>
+            <b-col cols="6">
+              <TreeExample 
+                    :treeDisplayData="pictureTagList"
+                    v-on:checked-node="newPictureTagCheck"
+                    :tagTreeTitle='"Add tag"'
+              />
+              <b-button @click="savePicture()" variant="outline-primary">Save tags</b-button>
             </b-col>
           </b-row>
           <b-row>
@@ -31,6 +39,10 @@
                 </b-form-group>
                 <b-button @click="importFolder()" variant="outline-primary">Import Folder</b-button>
                 <b-button @click="editFolder()" variant="outline-primary">Edit Folder</b-button>
+
+
+                <b-form-input v-model="mainPath" placeholder="Enter main path"></b-form-input>
+                <b-button @click="saveMainPath()" variant="outline-primary">Save Main</b-button>
               </div>
             </b-col>
           </b-row>
@@ -230,6 +242,7 @@ export default {
       pictureNumber: 0,
       selectedPictureId: "",
       pictureList: [],
+      mainPath: ""
     }
   },
   // watch: {
@@ -494,6 +507,15 @@ export default {
         this.getFolderList()
         this.searchTags.splice(0)
         this.getPictureList()
+      })
+    },
+
+    saveMainPath: function() {
+      let options = {
+        mainPath: this.mainPath,
+      }
+      axios.post('/api/saveMainPath',options).then(response => {
+        console.log(response)
       })
     },
 

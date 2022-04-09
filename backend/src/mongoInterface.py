@@ -71,6 +71,12 @@ class MongoInterface:
         tagList.append({'tagName': tag['tagName'], 'tagGroup':tag['tagGroup']})
       return tagList
 
+    def insertMainPath(self, mainPath):
+      folder = self.foldersTable.find_one({'mainFolder': mainPath})
+      if folder==None:
+        newEntry = {'mainFolder': mainPath}
+        self.foldersTable.insert_one(newEntry)
+
     def insertNewFolder(self, newFolderName):
       folder = self.foldersTable.find_one({'folderName': newFolderName})
       if folder==None:

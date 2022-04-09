@@ -55,7 +55,7 @@ export default {
           child: {
             class: "",
             style: {
-              height: "35px",
+              height: "20px",
             },
             active: {
               style: {
@@ -69,7 +69,9 @@ export default {
         },
         text: {
           // class: "" // uncomment this line to overwrite the 'capitalize' class, or add a custom class
-          style: {},
+          style: {
+            "font-size": "20px"
+          },
           active: {
             style: {
               "font-weight": "bold",

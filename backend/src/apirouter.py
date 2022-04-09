@@ -106,6 +106,12 @@ def savePicture():
 #   return jsonify({'msg':'ciao'})
 
 
+@apirouter.route('/saveMainPath',methods=['POST'])
+def saveMainPath():
+  params = request.get_json(force=True)
+  print(params['mainPath'])
+  mongo_interface.insertMainPath(params['mainPath'])
+  return {'msg':'salvato'}
 
 @apirouter.route('/editFolder',methods=['POST'])
 def importFolder():
@@ -117,7 +123,7 @@ def importFolder():
     mongo_interface.insertNewFolder(params['newFolder'])
     imagesInFolder = appUtils.getPicturesByFolder(params['newFolder'])
     for image in imagesInFolder:
-      mongo_interface.savePicture(image['dir'], image['filename'], [])
+      mongo_interface.savePdirectiveicture(image['dir'], image['filename'], [])
 
   if params['directive'] == 'clear-tags':
     for image in imagesInFolder:
