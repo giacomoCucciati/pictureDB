@@ -1,14 +1,16 @@
 from os import walk
 from os.path import join
+from os.path import isdir
 import imghdr
 
-def getPicturesByFolder(folder):
+def getPicturesByFolder(mainPath, folder):
 
   imageExtensionAccepted = ['jpeg']
   filesInFolder = []
   imagesInFolder = []
 
-  for (dirpath, dirnames, filenames) in walk(folder):
+  fullFolder = join(mainPath,folder)
+  for (dirpath, dirnames, filenames) in walk(fullFolder):
     #filesInFolder.extend([join(dirpath,f) for f in filenames])
     for filename in filenames:
       filesInFolder.append({'dir':dirpath, 'filename': filename})
@@ -19,3 +21,7 @@ def getPicturesByFolder(folder):
       imagesInFolder.append(myfile)
 
   return imagesInFolder
+
+def checkFolderExistence(mainPath,innerFolder):
+  fullFolder = join(mainPath,innerFolder)
+  return isdir(fullFolder)

@@ -72,10 +72,20 @@ class MongoInterface:
       return tagList
 
     def insertMainPath(self, mainPath):
-      folder = self.foldersTable.find_one({'mainFolder': mainPath})
+      folder = self.foldersTable.find_one({ 'mainFolder': { "$exists": True } })
       if folder==None:
         newEntry = {'mainFolder': mainPath}
         self.foldersTable.insert_one(newEntry)
+      else:
+        print("HEREEEEEEEEEEEEE")
+        newpath = { "$set": { "mainFolder": mainPath} }
+        self.foldersTable.update_one({'_id': folder['_id']}, newpath)
+
+    def getMainPath(self):
+      result = self.foldersTable.find_one({ 'mainFolder': { "$exists": True } })
+      if result != None:
+        return result['mainFolder']
+      return None
 
     def insertNewFolder(self, newFolderName):
       folder = self.foldersTable.find_one({'folderName': newFolderName})
@@ -90,7 +100,7 @@ class MongoInterface:
 
     def getFolderList(self):
       folderList = []
-      for folder in self.foldersTable.find():
+      for folder in self.foldersTable.find({ 'folderName': { "$exists": True } }):
         folderList.append(folder['folderName'])
       return folderList
     

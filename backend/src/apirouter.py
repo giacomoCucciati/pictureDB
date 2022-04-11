@@ -113,17 +113,23 @@ def saveMainPath():
   mongo_interface.insertMainPath(params['mainPath'])
   return {'msg':'salvato'}
 
+@apirouter.route('/getMainPath',methods=['GET'])
+def getMainPath():
+  mainFolder = mongo_interface.getMainPath()
+  return {'mainFolder':mainFolder}
+
 @apirouter.route('/editFolder',methods=['POST'])
 def importFolder():
   print("Begin importFolder")
   params = request.get_json(force=True)
-  print(params['directive'])
+  print(params)
 
   if params['directive'] == 'new-folder':
     mongo_interface.insertNewFolder(params['newFolder'])
-    imagesInFolder = appUtils.getPicturesByFolder(params['newFolder'])
+    mainFolder = mongo_interface.getMainPath()
+    imagesInFolder = appUtils.getPicturesByFolder(mainFolder, params['newFolder'])
     for image in imagesInFolder:
-      mongo_interface.savePdirectiveicture(image['dir'], image['filename'], [])
+      mongo_interface.savePicture(image['dir'], image['filename'], [])
 
   if params['directive'] == 'clear-tags':
     for image in imagesInFolder:
@@ -138,6 +144,27 @@ def importFolder():
 
   print("End importFolder")
   return jsonify({'msg':'ciao'})
+
+@apirouter.route('/checkFolderExistence',methods=['POST'])
+def checkFolderExistence():
+  print("Begin checkFolderExistence")
+  options = {'msg':'', 'error':''}
+  params = request.get_json(force=True)
+  theList = params['folderList']
+  mainPath = mongo_interface.getMainPath()
+  
+  if mainPath == None:
+    options['error'] = 'Main path is not set'
+  else:
+    problemList = []
+    for innerFolder in theList:
+      if not appUtils.checkFolderExistence(mainPath,innerFolder):
+        problemList.append(innerFolder)
+    if len(problemList) > 0:
+      options['error'] = 'Found some bad paths: ' + ','.join(problemList)
+    else:
+      options['msg'] = 'ok'
+  return jsonify(options)
 
   
 @apirouter.route('/deleteDb',methods=['GET'])

@@ -39,7 +39,13 @@
                 </b-form-group>
                 <b-button @click="importFolder()" variant="outline-primary">Import Folder</b-button>
                 <b-button @click="editFolder()" variant="outline-primary">Edit Folder</b-button>
-
+                <b-form-file
+                  v-model="chosenFileList"
+                  :state="Boolean(chosenFileList)"
+                  plain
+                  directory
+                  multiple
+                ></b-form-file>
 
                 <b-form-input v-model="mainPath" placeholder="Enter main path"></b-form-input>
                 <b-button @click="saveMainPath()" variant="outline-primary">Save Main</b-button>
@@ -242,15 +248,15 @@ export default {
       pictureNumber: 0,
       selectedPictureId: "",
       pictureList: [],
-      mainPath: ""
+      mainPath: "",
+      chosenFileList: undefined
     }
   },
-  // watch: {
-  //   searchTags: function () {
-  //     console.log('searchTags', this.searchTags)
-  //     this.getPictureList()
-  //   }
-  // },
+  watch: {
+    chosenFileList: function () {
+      this.importFolder()
+    }
+  },
   methods: {
 
     // ###################################################
@@ -475,17 +481,67 @@ export default {
       })
     },
 
-    importFolder: function() {
-      if (this.selectedFolder === "") {
-        return
-      }
-      for (let i in this.folderList) {
-        if (this.folderList[i]['value'] === this.selectedFolder) {
-          this.$refs['import-folder-modal'].show()
-          return
+    importFolder: async function() {
+      try {
+        if (this.chosenFileList != undefined) {
+          // Collect all directories
+          let newImportFolderList = []
+          for (let fileIndex in this.chosenFileList) {
+            console.log(this.chosenFileList[fileIndex]["$path"])
+            let charIndex = this.chosenFileList[fileIndex]["$path"].lastIndexOf("/")
+            if (charIndex != -1) {
+              let folder = this.chosenFileList[fileIndex]["$path"].substring(0, charIndex+1)
+              let thefile = this.chosenFileList[fileIndex]["$path"].substring(charIndex+1)
+              console.log(folder,thefile)
+              newImportFolderList.push(folder)
+            } else {
+              throw new Error("No folder selected")
+            }
+          }
+          if (newImportFolderList.length > 0){
+            // reduce the list to unique values
+            let uniqueList = newImportFolderList.filter((value, index, self) => {
+              return self.indexOf(value) === index;
+            });
+            // check that each folder is properly defined
+            const response = await this.checkFolderExistence(uniqueList)
+            if (response.data.error !== '') {
+              throw new Error(response.data.error)
+            }
+            // now import each folder
+            for (let importIndex in uniqueList) {
+              this.selectedFolder = uniqueList[importIndex]
+              let alreadyPresent = false
+              for (let i in this.folderList) {
+                if (this.folderList[i]['value'] === this.selectedFolder) {
+                  alreadyPresent = true
+                }
+              }
+              if (alreadyPresent) {
+                this.$refs['import-folder-modal'].show()
+              } else {
+                this.launchEditFolder('new-folder')
+              }              
+            }
+          } else {
+            throw new Error("Empty folder list!")
+          }
+
+          // for (let i in this.folderList) {
+          //   if (this.folderList[i]['value'] === this.selectedFolder) {
+          //     this.$refs['import-folder-modal'].show()
+          //     return
+          //   }
+          // }
+          // this.launchEditFolder('new-folder')
         }
+      } catch (error) {
+        alert(error)
       }
-      this.launchEditFolder('new-folder')
+    },
+    
+    checkFolderExistence: function(list) {
+      return axios.post('/api/checkFolderExistence', {folderList: list})
     },
 
     editFolder: function() {
@@ -514,8 +570,14 @@ export default {
       let options = {
         mainPath: this.mainPath,
       }
-      axios.post('/api/saveMainPath',options).then(response => {
-        console.log(response)
+      axios.post('/api/saveMainPath',options).then(() => {
+        this.updateAll()     
+      })
+    },
+
+    getMainPath: function() {
+      axios.get('/api/getMainPath').then((response) => {
+        this.mainPath = response.data.mainFolder
       })
     },
 
@@ -620,13 +682,18 @@ export default {
       }
 
       return outObject
+    },
+
+    updateAll() {
+      this.getTagList()
+      this.getFolderList()
+      this.getPictureList()
+      this.getMainPath()
     }
 
   },
   mounted () {
-    this.getTagList()
-    this.getFolderList()
-    this.getPictureList()
+    this.updateAll()
     console.log('mounted')
   }
 }
