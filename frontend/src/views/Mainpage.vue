@@ -34,11 +34,26 @@
           <b-row>
             <b-col>
               <div class="withMargin">
-                <b-form-group label="Folder options">
-                  <b-form-input v-model="selectedFolder" placeholder="Enter folder"></b-form-input>
-                </b-form-group>
-                <b-button @click="importFolder()" variant="outline-primary">Import Folder</b-button>
-                <b-button @click="editFolder()" variant="outline-primary">Edit Folder</b-button>
+                <b-input-group prepend="Main Path" class="mt-3">
+                  <b-form-input v-model="mainPath" placeholder="Enter main path"></b-form-input>
+                  <b-input-group-append>
+                    <b-button @click="saveMainPath()" variant="outline-primary">Save Main</b-button>
+                  </b-input-group-append>
+                </b-input-group>
+              </div>
+            </b-col>
+          </b-row>
+          <b-row>
+            <b-col>
+              <!-- some space -->
+              <div class="withBigMargin"/>
+              <hr>
+              <div class="withBigMargin"/>
+            </b-col>
+          </b-row>
+          <b-row>
+            <b-col>
+              <b-button @click="editFolder()" variant="outline-primary">Edit Folder</b-button>
                 <b-form-file
                   v-model="chosenFileList"
                   :state="Boolean(chosenFileList)"
@@ -46,14 +61,6 @@
                   directory
                   multiple
                 ></b-form-file>
-
-                <b-form-input v-model="mainPath" placeholder="Enter main path"></b-form-input>
-                <b-button @click="saveMainPath()" variant="outline-primary">Save Main</b-button>
-              </div>
-            </b-col>
-          </b-row>
-          <b-row>
-            <b-col>
               <b-form-group v-slot="{ ariaDescribedby }">
                 <b-form-radio-group
                   v-model="selectedFolder"
@@ -103,34 +110,9 @@
               </div>
             </b-col>
           </b-row>
-          <!-- <b-row>
-            <b-col>
-              <div class="withMargin">
-                <b-button-group>
-                  <b-button v-for="group in tagGroups" :key="group" @click="showPictureModal(group)">{{group}}</b-button>
-                </b-button-group>
-              </div>
-              <div class="withMargin">          
-                <b-form-tags v-model="selectedTags" no-outer-focus>
-                  <template v-slot="{ tags, tagVariant, removeTag }">                  
-                    <div class="d-inline-block">
-                      <b-form-tag
-                        v-for="tag in tags"
-                        @remove="removeTag(tag)"
-                        :key="tag"
-                        :title="tag"
-                        :variant="tagVariant"
-                      >{{ tag }}</b-form-tag>
-                    </div>
-                  </template>
-                </b-form-tags>
-              </div>
-            </b-col>
-          </b-row> -->
           <b-row>
             <b-col>
               <div class="withMargin">
-                <b-button v-b-modal="'picture-modal'" variant="outline-primary">Add Tags to Picture</b-button>
                 <b-button @click="removePicture()" variant="outline-primary">Remove Picture from DB</b-button>
               </div>
             </b-col>
@@ -138,76 +120,6 @@
         </b-col>
       </b-row>
     </b-container>
-    <!-- <div>
-      <b-modal 
-        ref="tag-modal" 
-        ok-only 
-        no-close-on-esc 
-        no-close-on-backdrop
-        @ok="handleOk"
-      >
-        <template #modal-header="">
-          <h5>Tags in {{selectedGroup}}</h5>
-        </template>
-        <b-container>
-          <b-row>
-            <b-col>
-              <div class="withMargin">
-                <b-form-group
-                  v-slot="{ ariaDescribedby }"
-                >
-                  <b-form-checkbox-group
-                    v-model="searchTags"
-                    :options="tagListForModal"
-                    :aria-describedby="ariaDescribedby"
-                    name="buttons-1"
-                    buttons
-                    button-variant="outline-primary"
-                  ></b-form-checkbox-group>
-                </b-form-group>
-              </div>
-            </b-col>
-          </b-row>
-          <b-row>
-            <b-col>
-              <div class="withBigMargin"/>
-              <hr>
-              <div class="withBigMargin"/>
-            </b-col>
-          </b-row>
-          <b-row>
-            <b-col>
-              <div class="withMargin">
-                <b-form-input v-model="insertTagName" placeholder="Enter tag"></b-form-input>
-              </div>
-            </b-col>
-            <b-col>
-              <div class="withMargin">
-                <b-button @click="changeTagList('add-tag', selectedGroup)" variant="outline-primary">Add Tag</b-button>
-                <b-button @click="changeTagList('remove-tag', selectedGroup)" variant="outline-primary">Remove Tag</b-button>
-              </div>
-            </b-col>
-          </b-row>
-        </b-container>
-      </b-modal>
-    </div> -->
-    <div>
-      <b-modal id="picture-modal" @ok="savePicture()">
-        <b-container>
-          <b-row>
-            <b-col>
-              <div class="withMargin">
-                <TreeExample 
-                  :treeDisplayData="pictureTagList"
-                  v-on:checked-node="newPictureTagCheck"
-                  :tagTreeTitle='"Tag List"'
-                />
-              </div>
-            </b-col>
-          </b-row>
-        </b-container>
-      </b-modal>
-    </div>
     <div>
       <b-modal ref="import-folder-modal" @ok="okImportModal()" title="Import folder">
         <div class="d-block text-center">
@@ -270,7 +182,6 @@ export default {
         for (let secondTagIndex in this.editorTagList[mainTagIndex].nodes) {
           const innerTag = this.editorTagList[mainTagIndex].nodes[secondTagIndex]
           if (innerTag.id == nodeId) {
-            // this.tagList[mainTagIndex].nodes.splice(secondTagIndex,1)
             found = true
           }
         }
@@ -296,8 +207,6 @@ export default {
         for (let secondTagIndex in this.editorTagList[mainTagIndex].nodes) {
           const innerTag = this.editorTagList[mainTagIndex].nodes[secondTagIndex]
           if (innerTag.id == nodeId) {
-            // innerTag.text = newName            
-            // innerTag.id = newName
             found = true
           }
         }
@@ -478,6 +387,17 @@ export default {
       axios.post('/api/getPictureTags',options).then(response => {
         console.log('getPictureTags response: ', response.data.msg)
         this.selectedTags = response.data.pictureTags
+
+        for (let selectedIndex in this.selectedTags) {
+          for (let mainTagIndex in this.pictureTagList) {
+            for (let secondTagIndex in this.pictureTagList[mainTagIndex].nodes) {
+              let innerTag = this.pictureTagList[mainTagIndex].nodes[secondTagIndex]
+              if (this.selectedTags[selectedIndex] === innerTag.id) {
+                innerTag.state.checked = true
+              }
+            }
+          }
+        }
       })
     },
 
@@ -509,31 +429,25 @@ export default {
               throw new Error(response.data.error)
             }
             // now import each folder
+            var alreadyPresentList = []
             for (let importIndex in uniqueList) {
-              this.selectedFolder = uniqueList[importIndex]
-              let alreadyPresent = false
+              let aFolder = uniqueList[importIndex]
+
               for (let i in this.folderList) {
-                if (this.folderList[i]['value'] === this.selectedFolder) {
-                  alreadyPresent = true
+                if (this.folderList[i]['value'] === aFolder) {
+                  alreadyPresentList.push(aFolder)
                 }
               }
-              if (alreadyPresent) {
-                this.$refs['import-folder-modal'].show()
-              } else {
+              if ( !alreadyPresentList.includes(aFolder) ) {
                 this.launchEditFolder('new-folder')
               }              
+            }
+            if (alreadyPresentList.length > 0) {
+              alert("These folders are already present in the data base. If you want to modify them use Edit Folder button: " + alreadyPresentList)
             }
           } else {
             throw new Error("Empty folder list!")
           }
-
-          // for (let i in this.folderList) {
-          //   if (this.folderList[i]['value'] === this.selectedFolder) {
-          //     this.$refs['import-folder-modal'].show()
-          //     return
-          //   }
-          // }
-          // this.launchEditFolder('new-folder')
         }
       } catch (error) {
         alert(error)
