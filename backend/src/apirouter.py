@@ -29,7 +29,7 @@ def changeTag():
   if params['action'] == "editTag":
     mongo_interface.editTag(params['tagId'],params['newName'])
   if params['action'] == "createTag":
-    mongo_interface.createTag(params['parentTagId'])
+    mongo_interface.createTag(params['parentTagId'],params['newTagName'])
   print("End changeTag")
   return jsonify({'msg':'ciao'})
 
@@ -51,7 +51,10 @@ def getFolderList():
 @apirouter.route('/getPictureList',methods=['POST'])
 def getPictureList():
   params = request.get_json(force=True)
-  pictureList = mongo_interface.getPictureByTag(params['searchTagList'])
+  if params['searchFolder'] != "":
+    pictureList = mongo_interface.getPictureByTagAndFolder(params['searchTagList'],params['searchFolder'])
+  else:
+    pictureList = mongo_interface.getPictureByTag(params['searchTagList'])
   return jsonify({'msg':'ciao', 'pictureList': pictureList})
 
 @apirouter.route('/getPicture',methods=['POST'])
@@ -123,13 +126,15 @@ def importFolder():
   print("Begin importFolder")
   params = request.get_json(force=True)
   print(params)
+  mainFolder = mongo_interface.getMainPath()
+  imagesInFolder = appUtils.getPicturesByFolder(mainFolder, params['newFolder'])
 
   if params['directive'] == 'new-folder':
-    mongo_interface.insertNewFolder(params['newFolder'])
-    mainFolder = mongo_interface.getMainPath()
-    imagesInFolder = appUtils.getPicturesByFolder(mainFolder, params['newFolder'])
-    for image in imagesInFolder:
-      mongo_interface.savePicture(image['dir'], image['filename'], [])
+    if len(imagesInFolder) > 0:
+      mongo_interface.insertNewFolder(params['newFolder'])
+    
+      for image in imagesInFolder:
+        mongo_interface.savePicture(image['dir'], image['filename'], [])
 
   if params['directive'] == 'clear-tags':
     for image in imagesInFolder:

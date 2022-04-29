@@ -5,7 +5,7 @@ import imghdr
 
 def getPicturesByFolder(mainPath, folder):
 
-  imageExtensionAccepted = ['jpeg']
+  imageExtensionAccepted = ['jpeg', 'png']
   filesInFolder = []
   imagesInFolder = []
 

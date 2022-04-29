@@ -6,6 +6,7 @@
           <b-row>
             <b-col cols="6">
               <TreeExample 
+                ref="build-tag-tree"
                 :treeDisplayData="editorTagList"
                 v-on:delete-node="deleteTag"
                 v-on:edit-node="editTag"
@@ -16,9 +17,10 @@
             </b-col>
             <b-col cols="6">
               <TreeExample 
-                    :treeDisplayData="pictureTagList"
-                    v-on:checked-node="newPictureTagCheck"
-                    :tagTreeTitle='"Add tag"'
+                ref="select-tag-tree"
+                :treeDisplayData="pictureTagList"
+                v-on:checked-node="newPictureTagCheck"
+                :tagTreeTitle='"Add tag"'
               />
               <b-button @click="savePicture()" variant="outline-primary">Save tags</b-button>
             </b-col>
@@ -53,23 +55,43 @@
           </b-row>
           <b-row>
             <b-col>
-              <b-button @click="editFolder()" variant="outline-primary">Edit Folder</b-button>
-                <b-form-file
-                  v-model="chosenFileList"
-                  :state="Boolean(chosenFileList)"
-                  plain
-                  directory
-                  multiple
-                ></b-form-file>
-              <b-form-group v-slot="{ ariaDescribedby }">
-                <b-form-radio-group
-                  v-model="selectedFolder"
-                  :options="folderList"
-                  :aria-describedby="ariaDescribedby"
-                  name="radios-stacked"
-                  stacked
-                ></b-form-radio-group>
-              </b-form-group>
+              <b-row>
+                <b-col cols="8">
+                  <b-form-file
+                    v-model="chosenFileList"
+                    :state="Boolean(chosenFileList)"
+                    browse-text='Add folder'
+                    
+                    directory
+                    multiple
+                  ></b-form-file>
+                </b-col>
+                <b-col>
+                  <b-button @click="editFolder()" :disabled='noFolderSelect' variant="outline-primary">Edit Folder</b-button>
+                </b-col>
+              </b-row>
+              <b-row>
+                <b-col class="text-left">
+                  <b-form-group v-slot="{ ariaDescribedby }">
+                    <!-- <b-form-radio-group
+                      v-model="selectedFolder"
+                      :options="folderList"
+                      :aria-describedby="ariaDescribedby"
+                      name="radios-stacked"
+                      stacked
+                      @input="uncheck()"
+                    ></b-form-radio-group> -->
+                    <b-form-checkbox-group
+                      id="checkbox-group-1"
+                      v-model="selectedFolderList"
+                      :options="folderList"
+                      :aria-describedby="ariaDescribedby"
+                      name="flavour-1"
+                      stacked
+                    ></b-form-checkbox-group>
+                  </b-form-group>
+                </b-col>
+              </b-row>
             </b-col>
           </b-row>
           <b-row>
@@ -93,6 +115,11 @@
           </b-row>
         </b-col>
         <b-col cols="8">
+          <b-row>
+            <b-col>
+              Number of pictures selected: {{pictureList.length}}
+            </b-col>
+          </b-row>
           <b-row>
             <b-col cols="1">
               <div class="withMargin">
@@ -140,7 +167,6 @@
 </template>
 
 <script>
-import '@riophae/vue-treeselect/dist/vue-treeselect.css'
 import axios from 'axios'
 import TreeExample from "../components/TreeTag";
 
@@ -156,6 +182,7 @@ export default {
       selectedTags: [],       // list of tags to add to the picture
       tagGroups: [],
       selectedFolder: "",
+      selectedFolderList: [],
       folderList: [],
       pictureNumber: 0,
       selectedPictureId: "",
@@ -167,9 +194,35 @@ export default {
   watch: {
     chosenFileList: function () {
       this.importFolder()
+    },
+    selectedFolderList: function () {
+      if (this.selectedFolderList.length > 1) {
+        this.selectedFolderList = [this.selectedFolderList[this.selectedFolderList.length-1]]
+      }
+      if (this.selectedFolderList.length === 1) {
+        if (this.selectedFolderList[0] !== this.selectedFolder) {
+          this.selectedFolder = this.selectedFolderList[0]
+        }
+      } else {
+        this.selectedFolder = ""
+      }
+      console.log(this.selectedFolderList, this.selectedFolder)
+    },
+    selectedFolder: function () {
+      this.getPictureList()
+    }
+  },
+  computed: {
+    noFolderSelect() {
+      console.log('this.selectedFolder', this.selectedFolder)
+      if (this.selectedFolder === "") return true
+      return false 
     }
   },
   methods: {
+    uncheck: function() {
+      console.log('Myval')
+    },
 
     // ###################################################
     // #                   Tag Section                   #
@@ -226,8 +279,8 @@ export default {
         })
       }
     },
-    createTag: function(parentNodeId) {
-      console.log("createTag ", parentNodeId)
+    createTag: function(parentNodeId, newname) {
+      console.log("createTag ", parentNodeId, newname)
       
       for (let mainTagIndex in this.editorTagList) {
         const innerTag = this.editorTagList[mainTagIndex]
@@ -241,6 +294,7 @@ export default {
             let options = {
               action: 'createTag',
               parentTagId: parentNodeId,
+              newTagName: newname
             }
             axios.post('/api/changeTag', options).then(response => {
               console.log('createTag response: ', response.data.msg)
@@ -256,12 +310,12 @@ export default {
       for (let mainTagIndex in this.editorTagList) {
         for (let secondTagIndex in this.editorTagList[mainTagIndex].nodes) {
           const innerTag = this.editorTagList[mainTagIndex].nodes[secondTagIndex]
-          console.log(innerTag)
           if (innerTag.state.checked) {
             this.searchTags.push(innerTag.id)
           }
         }
       }
+      console.log("searchTags before getPictureList", this.searchTags)
       this.getPictureList()
     },
 
@@ -275,38 +329,8 @@ export default {
           }
         }
       }
-      console.log("newPictureTagCheck ", this.selectedTags)
     },    
     
-    // open(target, cm) {
-    //         console.log(target, cm);
-    //         // other actions...
-    //     },
-
-    //     close(target, cm) {
-    //         console.log(target, cm);
-    //         // other actions...
-    //     },
-    // showModal: function(group) {
-    //   this.buildGroupModal(group)
-    //   this.$refs['tag-modal'].show()
-    // },
-
-    // showPictureModal: function(group) {
-    //   this.buildGroupModal(group)
-    //   this.$refs['picture-modal'].show()
-    // },
-
-    // buildGroupModal: function(group) {
-    //   this.selectedGroup = group
-    //   this.tagListForModal.splice(0)
-    //   for (let i in this.tagList) {
-    //     if (this.tagList[i]['group'] === group) {
-    //       this.tagListForModal.push(this.tagList[i])
-    //     }
-    //   }
-    // },
-
     // ###################################################
     // #                 Picture Section                 #
     // ###################################################
@@ -324,9 +348,9 @@ export default {
           selectedTags:     this.selectedTags,
           selectedPictureId:  this.selectedPictureId,
         }
-        console.log(options)
         axios.post('/api/savePicture', options).then(response => {
           console.log('savePicture response: ', response.data.msg)
+          this.getPictureList()
         })
       }
     },
@@ -355,6 +379,7 @@ export default {
             text: this.tagGroups[index],
             id: this.tagGroups[index],
             checkable: true,
+            expandable: true,
             state: {checked: false, expanded: false, selected: false},
             nodes: []
           })
@@ -372,6 +397,7 @@ export default {
             this.editorTagList[groupIndex].nodes.push({
                 id: tagListFromDB[i]['tagName'],
                 text: tagListFromDB[i]['tagName'],
+                expandable: false,
                 state: {checked: false, expanded: false, selected: false}
               })
           }
@@ -388,14 +414,21 @@ export default {
         console.log('getPictureTags response: ', response.data.msg)
         this.selectedTags = response.data.pictureTags
 
-        for (let selectedIndex in this.selectedTags) {
-          for (let mainTagIndex in this.pictureTagList) {
-            for (let secondTagIndex in this.pictureTagList[mainTagIndex].nodes) {
-              let innerTag = this.pictureTagList[mainTagIndex].nodes[secondTagIndex]
-              if (this.selectedTags[selectedIndex] === innerTag.id) {
-                innerTag.state.checked = true
-              }
+        for (let mainTagIndex in this.pictureTagList) {
+          this.$refs["select-tag-tree"].$refs["my-tree"].collapseNode(this.pictureTagList[mainTagIndex].id);
+          let expandIfOneCheck = false // we expand the node if there is at least one check
+          for (let secondTagIndex in this.pictureTagList[mainTagIndex].nodes) {
+            let innerTag = this.pictureTagList[mainTagIndex].nodes[secondTagIndex]
+            if (this.selectedTags.includes(innerTag.id)) {
+              innerTag.state.checked = true
+              expandIfOneCheck = true
+            } else {
+              console.log('remove check of ',innerTag.id)
+              innerTag.state.checked = false
             }
+          }
+          if (expandIfOneCheck) {
+            //this.$refs["select-tag-tree"].$refs["my-tree"].expandNode(this.pictureTagList[mainTagIndex].id);
           }
         }
       })
@@ -418,11 +451,13 @@ export default {
               throw new Error("No folder selected")
             }
           }
+          console.log('newImportFolderList', newImportFolderList)
           if (newImportFolderList.length > 0){
             // reduce the list to unique values
             let uniqueList = newImportFolderList.filter((value, index, self) => {
               return self.indexOf(value) === index;
             });
+            console.log('uniqueList', uniqueList)
             // check that each folder is properly defined
             const response = await this.checkFolderExistence(uniqueList)
             if (response.data.error !== '') {
@@ -439,6 +474,7 @@ export default {
                 }
               }
               if ( !alreadyPresentList.includes(aFolder) ) {
+                this.selectedFolder = aFolder
                 this.launchEditFolder('new-folder')
               }              
             }
@@ -530,10 +566,10 @@ export default {
       this.selectedPictureId = ""
       this.pictureUrl = ""
       this.selectedTags.splice(0)
-      this.selectedFolder = ""
       // if (this.searchTags.length > 0) {
       let options = {
-        searchTagList: this.searchTags
+        searchTagList: this.searchTags,
+        searchFolder: this.selectedFolder
       }
       console.log(options)
       axios.post('/api/getPictureList', options).then(response => {

@@ -26,10 +26,10 @@ class MongoInterface:
 #                   Tag Section                   #
 ###################################################
 
-    def createTag(self, tagGroup):
-      tag = self.tagsTable.find_one({'tagName': 'New Tag'})
+    def createTag(self, tagGroup, newtagName):
+      tag = self.tagsTable.find_one({'tagName': newtagName})
       if tag==None:
-        newEntry = {'tagName': 'New Tag', 'tagGroup': tagGroup}
+        newEntry = {'tagName': newtagName, 'tagGroup': tagGroup}
         self.tagsTable.insert_one(newEntry)
     
     def removeTag(self, tagName):
@@ -115,13 +115,35 @@ class MongoInterface:
         pictures = [str(id) for id in self.picturesTable.find({"tags":[]}).distinct('_id')]
       return pictures
 
+    def getPictureByTagAndFolder(self, searchTagList, searchFolder):
+      find = {}
+      buildList = []
+      for tag in searchTagList:
+        buildList.append({"tags":tag})
+      if searchFolder != "":
+        mainPath = self.getMainPath()
+        if mainPath != None:
+          buildList.append({"folder":join(mainPath, searchFolder)})
+      if len(buildList) > 0:
+        find = {"$and":buildList}
+      else: 
+        find = {"tags":[]}
+      print("find",find)
+      pictures = [str(id) for id in self.picturesTable.find(find).distinct('_id')]
+      return pictures
+
     def getPictureById(self, picId):
       return self.picturesTable.find_one(ObjectId(picId))
 
     def buildPicture(self, folder, filename):
       img = Image.open(join(folder, filename))
       img_io = io.BytesIO()
-      img.save(img_io, 'JPEG', quality=10)
+      if filename.lower().endswith('jpeg') or filename.lower().endswith('jpg'):
+        img.save(img_io, 'JPEG', quality=10)
+      elif filename.lower().endswith('png'):
+        img.save(img_io, 'PNG', quality=10)
+      else: 
+        raise Exception("Wrong picture format!")
       img_io.seek(0)
       return base64.b64encode(img_io.read()).decode("utf-8")
     

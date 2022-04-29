@@ -10,13 +10,18 @@
     ></Tree>
     <b-modal 
         ref="edit-modal" 
-        ok-only 
-        no-close-on-esc 
-        no-close-on-backdrop
-        @ok="handleOk"
+        hide-footer
+        @ok="handleNewOk"
       >
       <div class="withMargin">
-        <b-form-input v-model="newName" placeholder="New name"></b-form-input>
+        <b-input-group>
+          <b-form-input v-model="newName" placeholder="New name"></b-form-input>
+
+          <b-input-group-append>
+            <b-button v-if="edit" @click="handleEditOk">Edit</b-button>
+            <b-button v-else @click="handleNewOk">Create</b-button>
+          </b-input-group-append>
+        </b-input-group>
       </div>
     </b-modal>
   </div>
@@ -34,7 +39,8 @@ export default {
   data: function () {
     return {
       editNodeId: undefined,
-      newName: ""
+      newName: "",
+      edit: true
     };
   },
   computed: {
@@ -134,36 +140,49 @@ export default {
     },
   },
   // mounted() {
-  //   this.$refs["my-tree"].expandNode(1);
+  //   this.$refs["my-tree"].expandNode("Persone");
   // },
+  watch: {
+    treeDisplayData: function() {
+
+    }
+  },
   methods: {
     myCheckedFunction: function (nodeId, state) {
       console.log('this.treeDisplayData', this.treeDisplayData)
       console.log(`is ${nodeId} checked ? ${state}`); 
+      const node = this.$refs["my-tree"].findNode(nodeId);
+      if (node.nodes === undefined) {
+        // the node doesn't have childs
+        // I use $set to ensure that VueJs detect the change
+        console.log('It is a child')
+        // this.$set(node, "nodes", [newNode]);
+      } else {
+        for (let index in node.nodes) {
+          node.nodes[index].state.checked = state
+        }
+      }
       // The following two lines seem to be necessary to update checked
       // state of children in case parent node changes state
-      const checkednode = this.$refs["my-tree"].findNode(nodeId);
-      this.$set(checkednode, state.checked, state);
+      // const checkednode = this.$refs["my-tree"].findNode(nodeId);
+      // this.$set(checkednode, state.checked, state);
       this.$emit('checked-node')
     },
-    // mySelectedFunction: function (nodeId, state) {
-    //   console.log(`is ${nodeId} selected ? ${state}`);
-    //   console.log(this.$refs["my-tree"].getSelectedNode());
-    //   const node = this.$refs["my-tree"].findNode(5);
-    //   const newState = node.state;
-    //   newState.checked = state;
-    //   this.$set(node, "state", newState);
-    //   console.log(this.$refs["my-tree"].findNode(5).state);
-    // },
     deleteNodeFunction: function (node) {
       this.$emit('delete-node', node.id)
     },
     editNodeFunction: function (node) {
       this.editNodeId = node.id;
+      this.edit = true
       this.$refs['edit-modal'].show()
     },
-    handleOk: function() {
+    handleEditOk: function() {
       this.$emit('edit-node', this.editNodeId, this.newName)
+      this.$refs['edit-modal'].hide()
+    },
+    handleNewOk: function() {
+      this.$emit('create-node', this.editNodeId, this.newName)
+      this.$refs['edit-modal'].hide()
     },
     addNodeFunction: function (node) {
       if (node.nodes === undefined) {
@@ -172,7 +191,9 @@ export default {
         console.log('Disabled parent node creation')
         // this.$set(node, "nodes", [newNode]);
       } else {
-        this.$emit('create-node', node.id)
+        this.editNodeId = node.id;
+        this.edit = false
+        this.$refs['edit-modal'].show()
       }
     },
   },
