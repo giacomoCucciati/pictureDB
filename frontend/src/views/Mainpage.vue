@@ -23,6 +23,7 @@
                 :tagTreeTitle='"Add tag"'
               />
               <b-button @click="savePicture()" variant="outline-primary">Save tags</b-button>
+              <b-button @click="saveAllPictures()" variant="outline-primary">Save tags all</b-button>
             </b-col>
           </b-row>
           <b-row>
@@ -350,6 +351,19 @@ export default {
         }
         axios.post('/api/savePicture', options).then(response => {
           console.log('savePicture response: ', response.data.msg)
+          this.getPictureList()
+        })
+      }
+    },
+    saveAllPictures: function () {
+      if (this.pictureList.length !== 0) {
+        console.log("lista",this.pictureList)
+        let options = {
+          selectedTags:     this.selectedTags,
+          selectedListaPictureId:  this.pictureList,
+        }
+        axios.post('/api/saveAllPictures', options).then(response => {
+          console.log('saveAllPictures response: ', response.data.msg)
           this.getPictureList()
         })
       }

@@ -87,6 +87,18 @@ def savePicture():
   mongo_interface.updatePictureTags(params['selectedPictureId'], params['selectedTags'])
   print("End savePicture")
   return jsonify({'msg':'ciao'})
+  
+@apirouter.route('/saveAllPictures',methods=['POST'])
+def saveAllPictures():
+  print("Begin saveAllPictures")
+  params = request.get_json(force=True)
+  for pictureId in params["selectedListaPictureId"]:
+    print(pictureId) #giusto per vederla a schermo
+    mongo_interface.updatePictureTags(pictureId, params['selectedTags'])
+
+  print("End saveAllPictures")
+  return jsonify({'msg':'ciao'})
+
 
 # @apirouter.route('/removePicture',methods=['POST'])
 # def removePicture():
